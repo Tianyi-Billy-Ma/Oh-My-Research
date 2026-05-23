@@ -10,7 +10,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `LigphiDonk/Oh-my--paper`
 - `uditgoenka/autoresearch`
 
-Current surface area is small: a plugin manifest, an `.mcp.json` declaring three search-MCP servers (Exa, Tavily, Brave), and a `bin/load-env-and-exec.sh` shim that resolves API keys from shell env first and a project-local `.env` second. No skills/agents/hooks/commands yet, and there is **no build, test, or lint pipeline** because there is no application code — do not invent one. New work means authoring plugin components and bumping `plugin.json` version, not editing source.
+Current surface area: a plugin manifest (`name: "omr"`), an `.mcp.json` declaring five MCP servers (Exa, Tavily, Brave, GitHub, Hugging Face), a `bin/load-env-and-exec.sh` shim for stdio env resolution, and one skill (`skills/setup/`). There is **no build, test, or lint pipeline** because there is no application code — do not invent one. New work means authoring plugin components (skills, agents, hooks) and bumping `plugin.json` version, not editing source.
+
+## Naming convention (REQUIRED)
+
+The plugin is published with `name: "omr"` in `plugin.json` — that field IS the slash-command namespace. The full name "Oh-My-Research" lives only in the description; `omr` is the shorthand everywhere else.
+
+Skills MUST follow this scheme:
+
+- Folder: `skills/<skill-name>/SKILL.md` (no `omr-` prefix on the folder; the namespace comes from the plugin).
+- Invoked as: `/omr:<skill-name>` (e.g. `/omr:setup`).
+- The `description:` field in SKILL.md frontmatter should include the keyword trigger `omr-<skill-name>` (hyphenated form) so users typing it in plain chat auto-trigger the skill. Also include `omr:<skill-name>` and a natural-language phrasing.
+- Do not invent alternative namespaces (`oh-my-research:<skill>`, `research:<skill>`). They will not resolve.
+
+Bias toward over-listing triggers in descriptions — false positives are cheap, false negatives are invisible to the user.
 
 ## Plugin layout contract
 
@@ -85,4 +98,4 @@ Anything that touches MCP wiring (new server, env var rename, shim change, trans
 
 - `.omc/` is git-ignored and holds local OMC runtime state (sessions, project memory, HUD cache) — never commit it.
 - `.env` is git-ignored; only `.env.example` is checked in. Never put real keys in the example.
-- The repo lives at `github.com/Tianyi-Billy-Ma/Oh-My-Research` per `plugin.json`; the `name` field there (`oh-my-research`) is what shows up as the plugin namespace inside Claude Code.
+- The repo lives at `github.com/Tianyi-Billy-Ma/Oh-My-Research`; the **plugin name** in `plugin.json` is `omr` (the namespace), not `oh-my-research`. Don't conflate the repo name with the plugin name.
