@@ -1,15 +1,14 @@
 # Phase 4 — Verify
 
-**Goal:** explain how the user actually picks up the new state and close the
-loop. No probing, no MCP calls — this is guidance only, kept separate from
-Phase 2's audit so the user can re-audit on demand without re-reading the
-verify instructions.
+**Goal:** explain how the user picks up the new state, persist the
+"configured" marker so subsequent runs can short-circuit, and close the loop.
+No probing, no MCP calls — guidance + bookkeeping only.
 
 ## Steps
 
 ### 4.1 Reload guidance
 
-Tailor the advice to what changed in Phase 3:
+Tailor the advice to what Phase 3 actually did:
 
 - **`.env` was created or already existed and the user just edited it
   (stdio servers):**
@@ -24,42 +23,89 @@ Tailor the advice to what changed in Phase 3:
   `claude`. A `/mcp` reconnect inside an already-running session will not
   pick up the new env.
 
-- **Nothing changed (audit-only path that somehow reached this phase):**
+- **Audit-only run or nothing changed:**
   Just point at `/mcp` for live status. Don't suggest a restart.
 
-### 4.2 Smoke check pointer
+If a scope flag was set, mention what was deferred so the user knows the
+state is partial:
 
-Tell the user how to confirm each server is reachable:
+> Scope `--local` ran — HTTP gaps (if any) remain. Rerun `/omr:setup
+> --global` when you're ready to wire shell exports.
+
+### 4.2 Persist the configured marker
+
+**Skip this step entirely if `audit_only` is true** — audit runs are
+read-only by contract.
+
+Path:
+
+```bash
+CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+CONFIG_FILE="$CONFIG_DIR/.omr-config.json"
+```
+
+Write a JSON blob with these fields:
+
+- `setupCompleted`: ISO-8601 timestamp of *this* completion (current time).
+- `setupVersion`: the omr plugin version (read from
+  `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` → `.version`).
+- `lastAuditAt`: same as `setupCompleted` on a remediation run.
+- `lastScope`: `local`, `global`, or `all`.
+- `tokensReachableAtSetup`: per-server bool map — true when Phase 2 said
+  `✓ set`. Do NOT include the token values; the names are the keys.
+
+Procedure:
+
+1. `mkdir -p "$CONFIG_DIR"` (idempotent).
+2. If the file exists, read it with `jq` to preserve unknown fields:
+   ```bash
+   jq --argjson new "$NEW_OBJ" '. + $new' "$CONFIG_FILE" > "$CONFIG_FILE.tmp"
+   mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+   ```
+   If `jq` isn't available, fall back to overwriting with the new object —
+   our schema is small and we don't promise to merge.
+3. If the file doesn't exist, write the new object directly.
+
+The marker is **global** (per Claude Code config dir), not per-project — it
+records that the user has been through this flow at least once. Per-project
+state is encoded by the presence/contents of `./.env` itself.
+
+### 4.3 Audit-only marker update
+
+If `audit_only` is true and `.omr-config.json` already exists, update only
+`lastAuditAt` to the current ISO timestamp (preserving every other field).
+If it doesn't exist, do nothing — audit alone isn't enough to claim setup.
+
+### 4.4 Smoke check pointer
 
 > Run `/mcp` and look for each of the five servers under "Connected". If
 > any show as disconnected after a reload, rerun `/omr:setup --audit` to
 > re-check tokens, then inspect that server's logs via `/mcp` for the
 > underlying error.
 
-Do **not** call an MCP tool from this skill as a smoke test. It burns the
-user's API quota and adds nothing the `/mcp` status panel doesn't already
-show.
+Do **not** call an MCP tool from this skill as a smoke test.
 
-### 4.3 Wrap-up summary
+### 4.5 Wrap-up summary
 
-Print a final block with three sections, populated from Phase 2 + Phase 3
-state:
+Print a final block populated from Phase 2 + Phase 3 state:
 
 ```
 ✓ Reachable now:    exa, tavily, github
 ↻ Pending user:     brave-search (edit ./.env), huggingface (shell export)
 ✗ Unmappable:       (none)
+Scope:              all
+Marker written:     ~/.claude/.omr-config.json
 ```
 
-Empty sections can be elided. Don't add anything after this block; the
-skill is done.
+Empty sections can be elided. The `Marker written` line is omitted on
+audit-only runs.
 
-### 4.4 Pointer for repeat runs
+### 4.6 Pointer for repeat runs
 
 End with one line:
 
 > Rerun `/omr:setup --audit` anytime to re-check token status without
-> touching files.
+> touching files. Rerun `/omr:setup --force` to redo the full wizard.
 
 ## Handoff
 

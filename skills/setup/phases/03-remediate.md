@@ -1,8 +1,16 @@
 # Phase 3 — Remediate
 
-**Goal:** close the gaps Phase 2 found, without ever writing a token value
-ourselves. The only write this phase may perform is `cp .env.example .env`
-(and only with explicit user consent).
+**Goal:** close the gaps Phase 2 found, scoped to the flag the user picked.
+The only filesystem write this phase performs is `cp .env.example .env`, and
+only with explicit consent.
+
+This phase respects two flags from SKILL.md:
+
+- `scope=local` → only act on project-local `.env`. List HTTP gaps but do
+  not emit `export` advice.
+- `scope=global` → only act on shell exports. Skip `.env` scaffolding even if
+  stdio tokens are missing.
+- `scope=all` (default, no flag) → handle both.
 
 ## Steps
 
@@ -19,9 +27,12 @@ Build two lists from Phase 2's status records:
 - `stdio_missing`: stdio servers with no token reachable.
 - `http_missing`: http servers with no token reachable.
 
-Handle them separately — they need different fixes.
-
 ### 3.3 Remediate stdio gaps
+
+**Skip this entire section if `scope=global`.** Echo:
+
+> Scope `--global` — skipping project-local `.env` remediation. Stdio gaps
+> deferred to a `--local` (or default) run.
 
 If `stdio_missing` is empty, skip to 3.4.
 
@@ -43,30 +54,34 @@ If yes:
 1. Run `cp "${CLAUDE_PLUGIN_ROOT}/.env.example" ./.env`. Do NOT `chmod`,
    do NOT seed values, do NOT open it.
 2. Confirm the file was created.
-3. Print which keys to fill in (the env vars from `stdio_missing`) and
-   the canonical URL for each. Pull the URLs from the README's "Bundled
-   MCPs" / "Configuring tokens" section — don't hardcode them here, the
-   README is the source of truth.
+3. Print which keys to fill in (the env vars from `stdio_missing`) and the
+   canonical URL for each. Pull URLs from the README's "Bundled MCPs" /
+   "Configuring tokens" section — don't hardcode them here.
 
 **Case B — `.env` exists:**
 
 Don't copy over it. Tell the user which keys are still empty in the
-existing `.env` (by env var name, no values) and link to the doc URLs
-from the README. Example output:
+existing `.env` (by env var name, no values) and link to the doc URLs from
+the README. Example output:
 
 > `.env` already exists. The following stdio keys are still empty there;
 > please open `.env` and fill them in:
 > - `BRAVE_API_KEY` — https://api.search.brave.com/app/keys
 
-Do NOT cat, sed, or otherwise modify `.env`. The user edits it themselves.
+Do NOT cat, sed, or otherwise modify `.env`.
 
 ### 3.4 Remediate HTTP gaps
 
+**Skip this entire section if `scope=local`.** Echo:
+
+> Scope `--local` — skipping shell-export remediation. HTTP gaps deferred
+> to a `--global` (or default) run.
+
 If `http_missing` is empty, skip to 3.5.
 
-HTTP servers need shell-exported tokens. Print the exact `export` lines
-the user should add to their shell profile (`~/.zshrc`, `~/.bashrc`, or
-equivalent). Pull the env var names from `http_missing`. Example:
+HTTP servers need shell-exported tokens. Print the exact `export` lines the
+user should add to their shell profile (`~/.zshrc`, `~/.bashrc`, or
+equivalent). Pull env var names from `http_missing`. Example:
 
 > HTTP MCPs (`github`, `huggingface`) read their tokens from the shell at
 > launch — `.env` is not consulted. Add these to your shell profile and
@@ -87,11 +102,10 @@ the README.
 
 ### 3.5 Surface unmappable servers
 
-If Phase 1 emitted any `UNKNOWN` env vars (server in `.mcp.json` that the
-lookup couldn't match), tell the user:
+If Phase 1 emitted any `UNKNOWN` env vars, tell the user:
 
-> Couldn't determine the env var for: `<server-name>`. This is likely a
-> bug in `/omr:setup` — please open an issue at
+> Couldn't determine the env var for: `<server-name>`. This is likely a bug
+> in `/omr:setup` — please open an issue at
 > https://github.com/Tianyi-Billy-Ma/Oh-My-Research/issues with the
 > contents of `.mcp.json`.
 
@@ -103,6 +117,7 @@ Print one-line summary of what changed:
 
 - `.env` scaffolded? Yes/no, path.
 - HTTP exports user still needs to add? List env var names (no values).
+- Scope flag applied? Mention it so deferred work is visible.
 
 ## Handoff
 

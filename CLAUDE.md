@@ -31,7 +31,7 @@ Any skill whose flow takes more than ~30 lines of instructions MUST split into a
 
 ```
 skills/<skill-name>/
-├── SKILL.md                    # ≤120 lines: frontmatter, flag parsing, help text, safety rails, phase index
+├── SKILL.md                    # router: frontmatter, flag parsing, help text, pre-check, safety rails, phase index
 └── phases/
     ├── 01-<verb>.md            # one phase per file, numbered
     ├── 02-<verb>.md
@@ -40,7 +40,7 @@ skills/<skill-name>/
 
 Rules:
 
-- `SKILL.md` lists phases by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/phases/NN-*.md`) and tells the agent to read each in order. Don't inline phase logic.
+- `SKILL.md` lists phases by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/phases/NN-*.md`) and tells the agent to read each in order. Don't inline phase logic. Keep `SKILL.md` to routing concerns: frontmatter, flag parsing, help text, pre-check / already-configured handling, cross-phase safety rails, and the phase index. Routing legitimately runs ~150–200 lines for non-trivial skills; that's fine, but any step-by-step procedure belongs in a phase.
 - Each phase file has a goal, numbered steps, and a one-line **Handoff** at the end that the agent echoes before moving on. This makes interrupted runs resumable and traceable.
 - Cross-phase invariants (safety rails, "never echo secrets", scope guards) belong in `SKILL.md`, not duplicated across phases.
 - Lookup tables, schemas, and provider-specific quirks belong in the phase that needs them — keep phases self-contained so a future contributor can refactor one without re-reading the whole skill.
