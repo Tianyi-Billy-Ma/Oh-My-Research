@@ -10,37 +10,50 @@ claude --plugin-dir /path/to/Oh-My-Research
 
 For persistent installation via a marketplace, see the Claude Code plugin docs at https://code.claude.com/docs/en/plugins.
 
-## Search MCPs
+## Bundled MCPs
 
-The plugin ships an `.mcp.json` declaring three web-search MCP servers, loaded
+The plugin ships an `.mcp.json` declaring five MCP servers, loaded
 automatically when the plugin is enabled:
 
-| Server | Package | Env var |
-| --- | --- | --- |
-| Exa | `exa-mcp-server` | `EXA_API_KEY` |
-| Tavily | `tavily-mcp` | `TAVILY_API_KEY` |
-| Brave Search | `@brave/brave-search-mcp-server` | `BRAVE_API_KEY` |
+| Server | Transport | Source | Env var |
+| --- | --- | --- | --- |
+| Exa | stdio | `exa-mcp-server` (npx) | `EXA_API_KEY` |
+| Tavily | stdio | `tavily-mcp` (npx) | `TAVILY_API_KEY` |
+| Brave Search | stdio | `@brave/brave-search-mcp-server` (npx) | `BRAVE_API_KEY` |
+| GitHub | http | `https://api.githubcopilot.com/mcp/` | `GITHUB_PERSONAL_ACCESS_TOKEN` |
+| Hugging Face | http | `https://huggingface.co/mcp` | `HF_TOKEN` |
 
-All three start under stdio via `npx`, so no global install is required — `npx`
-will fetch them on first use.
+Stdio servers are fetched on first use by `npx`; HTTP servers are hosted by the
+vendor and need only a token.
 
-### Configuring API keys
+### Configuring tokens
 
-Two layers, with shell environment taking precedence:
+Two layers, with shell environment always winning:
 
-1. **Shell profile** (preferred) — export in `~/.zshrc` / `~/.bashrc`:
+1. **Shell profile** (preferred — required for the HTTP servers) — export in
+   `~/.zshrc` / `~/.bashrc`:
    ```bash
    export EXA_API_KEY=...
    export TAVILY_API_KEY=...
    export BRAVE_API_KEY=...
+   export GITHUB_PERSONAL_ACCESS_TOKEN=...
+   export HF_TOKEN=...
    ```
-2. **Project-local `.env`** — copy `.env.example` to `.env` in the directory
-   where you launch Claude Code, and fill in any keys. The `.env` is only read
-   for keys that aren't already set in your shell.
+2. **Project-local `.env`** (stdio servers only) — copy `.env.example` to
+   `.env` in the directory where you launch Claude Code. The loader shim picks
+   up any keys not already set in your shell. The two HTTP MCPs (`github`,
+   `huggingface`) cannot read `.env` because Claude Code expands their
+   `Authorization` header from its own process env at startup; for those, use
+   shell env or a tool like `direnv` that exports before launch.
 
-Get keys: Exa <https://dashboard.exa.ai/api-keys> · Tavily <https://app.tavily.com/home> · Brave <https://api.search.brave.com/app/keys>.
+Token sources:
+- Exa <https://dashboard.exa.ai/api-keys>
+- Tavily <https://app.tavily.com/home>
+- Brave <https://api.search.brave.com/app/keys>
+- GitHub PAT <https://github.com/settings/personal-access-tokens/new> — grant only the scopes you want the MCP to use
+- Hugging Face <https://huggingface.co/settings/tokens>
 
-Missing a key only disables that one server; the other two still work. Confirm
+Missing a token only disables that one server; the others still work. Confirm
 servers are up via `/mcp` inside Claude Code — each should show as connected
 with its tools listed.
 

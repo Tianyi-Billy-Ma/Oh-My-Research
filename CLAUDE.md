@@ -50,21 +50,36 @@ This loads the plugin into a Claude Code session without publishing to a marketp
 
 ## MCP servers (`.mcp.json`)
 
-The plugin ships three search MCPs at the root:
+Five MCPs ship at the root, split by transport:
 
+**Stdio (launched via the env-loader shim):**
 - `exa` → `npx -y exa-mcp-server` (env: `EXA_API_KEY`)
 - `tavily` → `npx -y tavily-mcp` (env: `TAVILY_API_KEY`)
 - `brave-search` → `npx -y @brave/brave-search-mcp-server` (env: `BRAVE_API_KEY`, stdio is default in 2.x)
 
-All three are launched through `${CLAUDE_PLUGIN_ROOT}/bin/load-env-and-exec.sh`, which:
+**HTTP (vendor-hosted, Streamable HTTP transport):**
+- `github` → `https://api.githubcopilot.com/mcp/` (header: `Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}`)
+- `huggingface` → `https://huggingface.co/mcp` (header: `Authorization: Bearer ${HF_TOKEN}`)
+
+### Stdio: the env-loader shim
+
+All stdio servers are launched through `${CLAUDE_PLUGIN_ROOT}/bin/load-env-and-exec.sh`, which:
 
 1. Reads `$PWD/.env` if it exists.
 2. Exports any `KEY=VALUE` pairs that are **not already set** in the inherited environment (so shell exports win over `.env`).
 3. `exec`s the actual MCP server command.
 
-When adding a new MCP that needs API keys, reuse this shim — don't bypass it. Just append another entry to `.mcp.json` with the same `command` and the new server's `npx` invocation in `args`. The shim is intentionally provider-agnostic and handles quoted values, `export`-prefixed lines, comments, and malformed lines.
+When adding a new stdio MCP that needs API keys, reuse this shim — don't bypass it. Append another entry to `.mcp.json` with the same `command` and the new server's `npx` (or other launcher) invocation in `args`. The shim is intentionally provider-agnostic and handles quoted values, `export`-prefixed lines, comments, and malformed lines.
 
-Anything that touches MCP wiring (new server, env var rename, shim change) is user-visible and should bump the `version` in `.claude-plugin/plugin.json`.
+### HTTP: shell env only
+
+Claude Code expands `${VAR}` in HTTP `headers` against its own `process.env` at startup, which is inherited from the launching shell. The loader shim never runs for HTTP servers because there is no subprocess to wrap. That means **`.env` fallback does not apply to HTTP MCPs** — tokens must be exported in the user's shell profile (or via a tool like `direnv` that exports before `claude` launches). Document this limitation when adding any new HTTP MCP, and prefer `${VAR}`-style references over hard-coded tokens.
+
+If a vendor's HTTP MCP supports a stdio mode (e.g., a Docker image or local binary), wrapping that path through the shim is preferable when `.env` fallback matters — but accept the trade-off of an extra dependency.
+
+### Versioning
+
+Anything that touches MCP wiring (new server, env var rename, shim change, transport switch) is user-visible and should bump the `version` in `.claude-plugin/plugin.json`.
 
 ## Repository-specific conventions
 
