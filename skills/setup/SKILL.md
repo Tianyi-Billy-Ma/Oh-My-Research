@@ -1,13 +1,16 @@
 ---
 name: setup
 description: |
-  Configure Oh-My-Research (omr) MCP servers: audit tokens for the five
-  bundled servers (Exa, Tavily, Brave Search, GitHub, Hugging Face),
-  scaffold a project-local `.env` from `.env.example` when missing, and
-  point the user at the right remediation steps without ever printing
-  secrets. Use when the user says "omr-setup", "omr:setup", "setup omr",
-  "set up Oh-My-Research", "configure omr keys", "check omr status", or
-  otherwise asks to install / configure / health-check this plugin.
+  Install, configure, and health-check Oh-My-Research (omr). The umbrella
+  entry point for every "I just enabled this plugin, now what?" question.
+  Today it covers MCP token audits for the five bundled servers (Exa,
+  Tavily, Brave Search, GitHub, Hugging Face), `.env` scaffolding, and a
+  configured-state marker so repeat runs are cheap. Future plugin
+  sub-systems (model defaults, agent installs, project-local config)
+  plug in as new phases here. Use when the user says "omr-setup",
+  "omr:setup", "setup omr", "set up Oh-My-Research", "configure omr",
+  "check omr status", "omr health check", or otherwise asks to install /
+  configure / health-check this plugin.
 level: 2
 ---
 
@@ -26,18 +29,25 @@ environment variable is set.
 ## Best-fit use
 
 Choose this skill when the user wants to **install, configure, or health-check
-omr's MCP wiring**.
+Oh-My-Research itself**. Setup is the umbrella entry point for everything that
+lives "around" the plugin — MCP wiring today, additional sub-systems (model
+defaults, agent installs, project-local config, hooks) as they get added.
 
-- After enabling the omr plugin for the first time → run it to confirm tokens
-  are reachable.
-- After adding a new API key → run it to confirm the right MCP server picks it
-  up.
-- When `/mcp` shows a server disconnected → run it to triage shell-env vs
-  `.env` vs missing-token.
+When new setup concerns land, they're added as new phases under this skill —
+not as separate skills — so users have one consistent place to fix any "I
+just installed omr, now what?" issue.
 
-Do **not** use it to install the plugin itself (the user is already inside
-it), to add new MCP servers, or to validate that an API key has the right
-scopes — those are separate workflows.
+Today's coverage:
+
+- Audit tokens for the five bundled MCP servers (Exa, Tavily, Brave Search,
+  GitHub, Hugging Face) and surface which ones are missing.
+- Scaffold a project-local `.env` from `.env.example` on consent.
+- Persist a configured-state marker so repeat runs short-circuit to a quick
+  re-audit instead of replaying the full wizard.
+
+Do **not** use it to install the plugin itself (you're already inside it), to
+add new MCP servers, or to validate that an API key has the right scopes —
+those are separate workflows.
 
 ## Flag parsing
 
