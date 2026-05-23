@@ -1,0 +1,17 @@
+{
+  "name": "oh-my-research",
+  "description": "Research workflows and skills for Claude Code.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Tianyi (Billy) Ma"
+  },
+  "homepage": "https://github.com/Tianyi-Billy-Ma/Oh-My-Research",
+  "repository": "https://github.com/Tianyi-Billy-Ma/Oh-My-Research",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "plugin",
+    "skills",
+    "research"
+  ]
+}
