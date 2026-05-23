@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "exa": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/load-env-and-exec.sh",
+      "args": ["npx", "-y", "exa-mcp-server"]
+    },
+    "tavily": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/load-env-and-exec.sh",
+      "args": ["npx", "-y", "tavily-mcp"]
+    },
+    "brave-search": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/load-env-and-exec.sh",
+      "args": ["npx", "-y", "@brave/brave-search-mcp-server"]
+    }
+  }
+}
