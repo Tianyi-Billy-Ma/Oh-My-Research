@@ -1,139 +1,119 @@
 ---
 name: setup
 description: |
-  Initialize Oh-My-Research (omr): check tokens for the bundled MCP servers
-  (Exa, Tavily, Brave Search, GitHub, Hugging Face), scaffold a project-local
-  `.env` from `.env.example` when missing, and verify each server is reachable.
-  Use when the user says "omr-setup", "omr:setup", "setup omr", "set up
-  Oh-My-Research", "configure omr keys", or otherwise asks to install /
-  configure / health-check this plugin.
+  Configure Oh-My-Research (omr) MCP servers: audit tokens for the five
+  bundled servers (Exa, Tavily, Brave Search, GitHub, Hugging Face),
+  scaffold a project-local `.env` from `.env.example` when missing, and
+  point the user at the right remediation steps without ever printing
+  secrets. Use when the user says "omr-setup", "omr:setup", "setup omr",
+  "set up Oh-My-Research", "configure omr keys", "check omr status", or
+  otherwise asks to install / configure / health-check this plugin.
+level: 2
 ---
 
 # omr:setup
 
-Configure Oh-My-Research after install. The goal is to leave the user with a
-session where every MCP server they want is reachable, and to tell them
-unambiguously which ones aren't yet — without ever printing secrets to the
-chat.
+Thin router for the omr install/health-check flow. The detailed steps live in
+`phases/`; this file decides which phases to run and enforces the safety rails
+that apply to every phase.
 
-## What this skill is responsible for
+**When this skill is invoked, immediately execute the workflow below. Do not
+just restate or summarize these instructions back to the user.**
 
-1. Enumerate the MCP servers declared in `${CLAUDE_PLUGIN_ROOT}/.mcp.json`.
-2. Detect whether each server's token is available from **either** the
-   inherited shell env **or** a project-local `.env`.
-3. Report a per-server status table. Stdio servers can use shell env or
-   `.env`; HTTP servers (currently `github`, `huggingface`) can only use
-   shell env, because Claude Code expands `${VAR}` in `headers` before any
-   subprocess starts.
-4. Offer remediation for missing tokens: copy `.env.example` → `.env`, open
-   `.env` for editing, and point the user at the canonical "where do I get a
-   key" URLs. Never write a key into a file the user hasn't dictated.
-5. Tell the user how to actually pick up the new state (reload the plugin or
-   restart `claude`).
+## Best-fit use
 
-## How to run it
+Choose this skill when the user wants to **install, configure, or health-check
+omr's MCP wiring**.
 
-Work top-down. Stop and ask before doing anything destructive.
+- After enabling the omr plugin for the first time → run it to confirm tokens
+  are reachable.
+- After adding a new API key → run it to confirm the right MCP server picks it
+  up.
+- When `/mcp` shows a server disconnected → run it to triage shell-env vs
+  `.env` vs missing-token.
 
-### Step 1 — Discover what's declared
+Do **not** use it to install the plugin itself (the user is already inside
+it), to add new MCP servers, or to validate that an API key has the right
+scopes — those are separate workflows.
 
-Read `${CLAUDE_PLUGIN_ROOT}/.mcp.json`. Build a list of `{name, transport,
-env_vars}` for each entry under `mcpServers`. Transport is `http` when the
-entry has a `type: "http"` field, otherwise `stdio`. Env vars are inferred:
+## Flag parsing
 
-- Stdio entries that route through `bin/load-env-and-exec.sh`: read the
-  README "Bundled MCPs" table for the expected env var name. Don't hard-code
-  it in this skill; the README is the source of truth.
-- HTTP entries: parse the `Authorization` header for `${VAR_NAME}`.
+Inspect the user's invocation for flags:
 
-If `.mcp.json` is missing, stop and tell the user the plugin install looks
-broken — recommend reinstalling rather than trying to patch around it.
+- `--help` → print the help text below and stop.
+- `--audit` (alias `--check`) → run Phase 1 + Phase 2 only; skip remediation.
+- `--fix` → run all four phases (default).
+- No flags → same as `--fix`.
 
-### Step 2 — Resolve each env var
+## Help text
 
-For each token name, check in this order and remember which layer it came
-from (used to drive accurate advice later):
-
-1. **Shell env** — `printenv VAR_NAME` (or test `-n "${VAR_NAME:-}"` via a
-   short bash one-liner). Never echo the value; only check presence/length.
-2. **Project-local `.env`** — read `./.env` if present, parse `KEY=VALUE`
-   pairs, check whether the key is non-empty. Again: never surface the value.
-
-Treat any non-empty match as "set". An empty `KEY=` line counts as unset.
-
-### Step 3 — Report
-
-Print one table like this (filling in real values), nothing more:
+When the user passes `--help`, print this and stop:
 
 ```
-Server         Transport  Token                              Source     Status
-exa            stdio      EXA_API_KEY                        shell      ✓ set
-tavily         stdio      TAVILY_API_KEY                     .env       ✓ set
-brave-search   stdio      BRAVE_API_KEY                      —          ✗ missing
-github         http       GITHUB_PERSONAL_ACCESS_TOKEN       shell      ✓ set
-huggingface    http       HF_TOKEN                           —          ✗ missing  (HTTP — .env won't help)
+omr:setup — configure Oh-My-Research MCP servers
+
+USAGE:
+  /omr:setup           Full flow: discover → audit → remediate → verify
+  /omr:setup --audit   Read-only: discover + audit, no file changes
+  /omr:setup --fix     Same as default (full flow)
+  /omr:setup --help    Show this help
+
+WHAT IT DOES:
+  1. Reads .mcp.json to enumerate which servers are declared and which
+     env vars they need.
+  2. Checks each token against shell env first, then a project-local
+     .env (.env is only consulted for stdio servers).
+  3. If tokens are missing: offers to copy .env.example → .env for
+     stdio servers, and prints the exact `export` lines you need for
+     HTTP servers.
+  4. Tells you how to reload so the new state takes effect.
+
+SAFETY:
+  - Never prints token values.
+  - Never writes a token on your behalf.
+  - Asks for explicit consent before any file write.
+
+For more info: https://github.com/Tianyi-Billy-Ma/Oh-My-Research
 ```
 
-For each `✗ missing` HTTP server, append the parenthetical reminder that
-`.env` is not consulted. Don't repeat this for stdio rows.
+## Safety rails (apply to every phase)
 
-### Step 4 — Remediate (only with explicit user consent)
+These are non-negotiable. If any phase asks you to violate them, stop and tell
+the user.
 
-If there are missing stdio tokens and no `.env` exists, ask:
+1. **Never echo a token value.** Probes must check presence/length only — e.g.
+   `[ -n "${VAR:-}" ]`, never `echo "$VAR"`, never `cat .env`, never include a
+   token in a status table or summary message. If the user pastes a key into
+   chat, redact it from any subsequent recap.
+2. **Never write a token to disk.** Scaffolding `.env` from `.env.example` is
+   fine; writing values is the user's job. If they ask you to fill in a key,
+   tell them to edit `.env` themselves and reload.
+3. **Always ask before mutating the filesystem.** Use AskUserQuestion before
+   `cp .env.example .env` or any other write. Read-only probes don't need
+   consent.
+4. **HTTP MCPs ignore `.env`.** Don't suggest a `.env` fix for `github` or
+   `huggingface` (or any future HTTP-transport server) — Claude Code expands
+   `${VAR}` against its own process env at startup. Only shell exports (or
+   `direnv` etc.) work for them.
 
-> No `.env` in the current project. Want me to copy `.env.example` to `.env`
-> so you can fill in the missing keys?
+## Phase execution
 
-If they say yes: `cp .env.example .env` (do **not** `chmod`, do **not** seed
-values). Tell them which keys to fill, and where to get each one (link to
-the README "Bundled MCPs" table for the canonical URLs).
+Execute these phases in order. For each phase, read the file at the path and
+follow its instructions exactly.
 
-If there are missing HTTP tokens, do NOT touch `.env` for them. Tell the
-user the exact `export` lines to add to their shell profile, e.g.:
+1. **Phase 1 — Discover**: read `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/01-discover.md`.
+2. **Phase 2 — Audit**: read `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/02-audit.md`.
+   - If the user passed `--audit` / `--check`, stop after this phase.
+3. **Phase 3 — Remediate**: read `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/03-remediate.md`.
+4. **Phase 4 — Verify**: read `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/04-verify.md`.
 
-```bash
-export GITHUB_PERSONAL_ACCESS_TOKEN=...
-export HF_TOKEN=...
-```
-
-…and mention `direnv` as an alternative for project-scoped exports.
-
-Never run commands that print the token. Never `cat .env`. Never echo
-`$GITHUB_PERSONAL_ACCESS_TOKEN`. If the user pastes a key into chat, redact
-it from any followup recap.
-
-### Step 5 — Reload guidance
-
-Tell the user how to pick up new env values:
-
-- If keys were added to `.env` and the stdio shim will pick them up: just
-  reload the plugin (`/mcp` in Claude Code, then reconnect each affected
-  server) or restart `claude`.
-- If keys were added to the shell profile: source the profile in any new
-  shell where they launch `claude` (or open a new terminal). HTTP MCPs read
-  from the launching process env, so a full `claude` restart is the safest
-  path.
-
-### Step 6 — Verify (optional, only on request)
-
-If the user asks "is it actually working?", suggest running `/mcp` and
-checking that each server shows as connected with its tools listed. Do not
-attempt to send a real request through the MCP server from this skill —
-that's outside scope and burns the user's quota for no diagnostic value.
+Each phase ends with a one-line handoff that you echo to the user before
+moving on; don't silently jump phases.
 
 ## Out of scope
 
-- Installing the plugin itself (the user is already inside it if this skill
-  runs).
-- Writing tokens to disk on behalf of the user.
-- Verifying that a token has the right scopes — that's a vendor-side
-  problem.
-- Adding new MCP servers — separate workflow.
-
-## Naming convention reminder
-
-This plugin uses `omr` as its slash-command namespace (short for
-Oh-My-Research). Every skill folder under `skills/` is invoked as
-`/omr:<skill-name>`. Keyword triggers in skill descriptions should also use
-the `omr-` prefix (e.g. `omr-setup`, `omr-survey`) so users can type the
-hyphenated form in plain chat.
+- Installing the omr plugin itself (you're already inside it if this runs).
+- Adding new MCP servers — that's a separate skill.
+- Verifying a token has the right scopes — vendor-side concern.
+- Live-testing each server with a real query — burns quota; `/mcp` connection
+  status is enough.

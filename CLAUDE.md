@@ -25,6 +25,29 @@ Skills MUST follow this scheme:
 
 Bias toward over-listing triggers in descriptions — false positives are cheap, false negatives are invisible to the user.
 
+## Skill structure: thin router + phases
+
+Any skill whose flow takes more than ~30 lines of instructions MUST split into a thin `SKILL.md` router plus a `phases/` directory:
+
+```
+skills/<skill-name>/
+├── SKILL.md                    # ≤120 lines: frontmatter, flag parsing, help text, safety rails, phase index
+└── phases/
+    ├── 01-<verb>.md            # one phase per file, numbered
+    ├── 02-<verb>.md
+    └── ...
+```
+
+Rules:
+
+- `SKILL.md` lists phases by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/phases/NN-*.md`) and tells the agent to read each in order. Don't inline phase logic.
+- Each phase file has a goal, numbered steps, and a one-line **Handoff** at the end that the agent echoes before moving on. This makes interrupted runs resumable and traceable.
+- Cross-phase invariants (safety rails, "never echo secrets", scope guards) belong in `SKILL.md`, not duplicated across phases.
+- Lookup tables, schemas, and provider-specific quirks belong in the phase that needs them — keep phases self-contained so a future contributor can refactor one without re-reading the whole skill.
+- Number prefix (`01-`, `02-`) defines execution order. Use 10-step increments only if you genuinely expect to insert phases later; otherwise keep them tight.
+
+Reference shape: `omc-setup` from oh-my-claudecode. Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
+
 ## Plugin layout contract
 
 Follow the official Claude Code plugin template exactly — the README pins this and the loader depends on it:
