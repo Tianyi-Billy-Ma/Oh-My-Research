@@ -1,4 +1,4 @@
-# Phase 3 — Remediate
+# Phase 4 — Remediate
 
 **Goal:** close the gaps Phase 2 found, scoped to the flag the user picked.
 The only filesystem write this phase performs is `cp .env.example .env`, and
@@ -14,27 +14,27 @@ This phase respects two flags from SKILL.md:
 
 ## Steps
 
-### 3.1 Short-circuit if nothing to do
+### 4.1 Short-circuit if nothing to do
 
-If Phase 2 reported zero missing tokens, skip to Phase 4. Echo:
+If Phase 2 reported zero missing tokens, skip to Phase 5. Echo:
 
 > Nothing to remediate. Moving to verify.
 
-### 3.2 Split missing tokens by transport
+### 4.2 Split missing tokens by transport
 
 Build two lists from Phase 2's status records:
 
 - `stdio_missing`: stdio servers with no token reachable.
 - `http_missing`: http servers with no token reachable.
 
-### 3.3 Remediate stdio gaps
+### 4.3 Remediate stdio gaps
 
 **Skip this entire section if `scope=global`.** Echo:
 
 > Scope `--global` — skipping project-local `.env` remediation. Stdio gaps
 > deferred to a `--local` (or default) run.
 
-If `stdio_missing` is empty, skip to 3.4.
+If `stdio_missing` is empty, skip to 4.4.
 
 Check whether `./.env` exists.
 
@@ -70,14 +70,14 @@ the README. Example output:
 
 Do NOT cat, sed, or otherwise modify `.env`.
 
-### 3.4 Remediate HTTP gaps
+### 4.4 Remediate HTTP gaps
 
 **Skip this entire section if `scope=local`.** Echo:
 
 > Scope `--local` — skipping shell-export remediation. HTTP gaps deferred
 > to a `--global` (or default) run.
 
-If `http_missing` is empty, skip to 3.5.
+If `http_missing` is empty, skip to 4.5.
 
 HTTP servers need shell-exported tokens. Print the exact `export` lines the
 user should add to their shell profile (`~/.zshrc`, `~/.bashrc`, or
@@ -100,7 +100,7 @@ equivalent). Pull env var names from `http_missing`. Example:
 Include the canonical URL for each missing HTTP token, again sourced from
 the README.
 
-### 3.5 Surface unmappable servers
+### 4.5 Surface unmappable servers
 
 If Phase 1 emitted any `UNKNOWN` env vars, tell the user:
 
@@ -111,7 +111,7 @@ If Phase 1 emitted any `UNKNOWN` env vars, tell the user:
 
 Don't try to guess.
 
-### 3.6 Summary
+### 4.6 Summary
 
 Print one-line summary of what changed:
 
@@ -121,4 +121,4 @@ Print one-line summary of what changed:
 
 ## Handoff
 
-> Phase 3 done — remediation complete. Moving to verify.
+> Phase 4 done — remediation complete. Moving to verify.

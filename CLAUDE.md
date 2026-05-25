@@ -48,6 +48,35 @@ Rules:
 
 Reference shape: `omc-setup` from oh-my-claudecode. Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
 
+## Skill convention: ask the user, don't prompt-and-wait
+
+Every user-facing question that a skill asks — consent prompts, scope choices, conflict resolutions, branch decisions — MUST go through the built-in `AskUserQuestion` tool with explicit options. Never write a plain-text question into the chat and wait for a free-form reply.
+
+Why: free-form chat replies depend on Claude's interpretation of intent, which is fragile across runs and frustrating to debug. `AskUserQuestion` makes the decision space explicit, deterministic, and reviewable. The tool also surfaces a structured UI for the user, which is a much better experience than parsing prose.
+
+When writing a phase that needs user input, the instruction should literally say "Use AskUserQuestion" and list the option labels you expect. If you find yourself drafting prose like "Ask the user whether…", treat that as a bug and switch to `AskUserQuestion`.
+
+## Skill convention: writing into user files (CLAUDE.md, settings.json, etc.)
+
+When a skill needs to inject plugin content into a user-owned file:
+
+- **Use a versioned marker block.** Wrap the content in HTML comments like
+  `<!-- BEGIN omr version="X.Y.Z" -->` and `<!-- END omr -->`. The version tag
+  lets the next run detect whether a refresh is needed.
+- **Insert-block only, never full-overwrite.** Preserve everything outside
+  the markers. Users have their own content; the plugin only owns its block.
+- **Idempotent at the same version.** If the block is already installed at
+  the current plugin version, skip the write with a one-line confirmation.
+- **Backup before refresh.** Take a backup to `<file>.backup.YYYY-MM-DD`
+  before any write. One backup per file per day — don't pile up.
+- **Stop on malformed state.** If the markers are unbalanced or nested, do
+  not try to repair. Stop and ask the user.
+
+The canonical content for each marker block lives under `templates/` (e.g.
+`templates/CLAUDE.md.partial`), versioned alongside the rest of the plugin.
+Bump `plugin.json` version whenever a template's content changes — that's the
+signal for installed instances to refresh on next setup run.
+
 ## Plugin layout contract
 
 Follow the official Claude Code plugin template exactly — the README pins this and the loader depends on it:
@@ -58,6 +87,7 @@ Oh-My-Research/
 │   └── plugin.json          # ONLY file under .claude-plugin/
 ├── .mcp.json                # MCP server declarations loaded by the plugin
 ├── bin/                     # plugin-internal scripts (e.g. env loader shim)
+├── templates/               # canonical content injected into user files (e.g. CLAUDE.md.partial)
 ├── skills/                  # one folder per skill, each containing SKILL.md
 │   └── <skill-name>/SKILL.md
 ├── agents/                  # optional: <name>.md agent definitions
