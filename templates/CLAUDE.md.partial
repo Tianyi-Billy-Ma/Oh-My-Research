@@ -32,10 +32,6 @@ values; use `/omr:setup` to audit.
 - Plugin namespace is `omr` (short for Oh-My-Research). The full name lives
   in the description; `omr` is the slash-command prefix everywhere.
 - Project-scoped omr state (if any) lives at `.omr/` (gitignored).
-- Compose with adjacent plugins rather than re-implementing: defer to
-  `oh-my-claudecode` for execution/planning agents, `claude-mem` for
-  cross-session memory, `omp` / `billyverse` for domain-specific research
-  skills.
 
 ### Where to learn more
 
