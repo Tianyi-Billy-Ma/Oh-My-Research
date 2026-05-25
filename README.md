@@ -1,6 +1,7 @@
-# Oh-My-Research
+# Oh-My-Research (`omr`)
 
-Research workflows and skills for Claude Code.
+Research workflows and skills for Claude Code. The plugin's namespace is
+`omr`, so every bundled skill is invoked as `/omr:<skill-name>`.
 
 ## Install
 
@@ -56,6 +57,15 @@ Token sources:
 Missing a token only disables that one server; the others still work. Confirm
 servers are up via `/mcp` inside Claude Code — each should show as connected
 with its tools listed.
+
+## Skills
+
+| Slash command | Keyword trigger | What it does |
+| --- | --- | --- |
+| `/omr:setup` | `omr-setup` | Audit MCP tokens, scaffold `.env`, point at remediation steps without ever printing secrets. |
+
+More skills land here as they're added; all follow the `/omr:<name>`
+convention.
 
 ## Layout
 

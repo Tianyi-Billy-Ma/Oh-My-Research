@@ -10,7 +10,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `LigphiDonk/Oh-my--paper`
 - `uditgoenka/autoresearch`
 
-Current surface area is small: a plugin manifest, an `.mcp.json` declaring three search-MCP servers (Exa, Tavily, Brave), and a `bin/load-env-and-exec.sh` shim that resolves API keys from shell env first and a project-local `.env` second. No skills/agents/hooks/commands yet, and there is **no build, test, or lint pipeline** because there is no application code — do not invent one. New work means authoring plugin components and bumping `plugin.json` version, not editing source.
+Current surface area: a plugin manifest (`name: "omr"`), an `.mcp.json` declaring five MCP servers (Exa, Tavily, Brave, GitHub, Hugging Face), a `bin/load-env-and-exec.sh` shim for stdio env resolution, and one skill (`skills/setup/`). There is **no build, test, or lint pipeline** because there is no application code — do not invent one. New work means authoring plugin components (skills, agents, hooks) and bumping `plugin.json` version, not editing source.
+
+## Naming convention (REQUIRED)
+
+The plugin is published with `name: "omr"` in `plugin.json` — that field IS the slash-command namespace. The full name "Oh-My-Research" lives only in the description; `omr` is the shorthand everywhere else.
+
+Skills MUST follow this scheme:
+
+- Folder: `skills/<skill-name>/SKILL.md` (no `omr-` prefix on the folder; the namespace comes from the plugin).
+- Invoked as: `/omr:<skill-name>` (e.g. `/omr:setup`).
+- The `description:` field in SKILL.md frontmatter should include the keyword trigger `omr-<skill-name>` (hyphenated form) so users typing it in plain chat auto-trigger the skill. Also include `omr:<skill-name>` and a natural-language phrasing.
+- Do not invent alternative namespaces (`oh-my-research:<skill>`, `research:<skill>`). They will not resolve.
+
+Bias toward over-listing triggers in descriptions — false positives are cheap, false negatives are invisible to the user.
+
+## Skill structure: thin router + phases
+
+Any skill whose flow takes more than ~30 lines of instructions MUST split into a thin `SKILL.md` router plus a `phases/` directory:
+
+```
+skills/<skill-name>/
+├── SKILL.md                    # router: frontmatter, flag parsing, help text, pre-check, safety rails, phase index
+└── phases/
+    ├── 01-<verb>.md            # one phase per file, numbered
+    ├── 02-<verb>.md
+    └── ...
+```
+
+Rules:
+
+- `SKILL.md` lists phases by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/phases/NN-*.md`) and tells the agent to read each in order. Don't inline phase logic. Keep `SKILL.md` to routing concerns: frontmatter, flag parsing, help text, pre-check / already-configured handling, cross-phase safety rails, and the phase index. Routing legitimately runs ~150–200 lines for non-trivial skills; that's fine, but any step-by-step procedure belongs in a phase.
+- Each phase file has a goal, numbered steps, and a one-line **Handoff** at the end that the agent echoes before moving on. This makes interrupted runs resumable and traceable.
+- Cross-phase invariants (safety rails, "never echo secrets", scope guards) belong in `SKILL.md`, not duplicated across phases.
+- Lookup tables, schemas, and provider-specific quirks belong in the phase that needs them — keep phases self-contained so a future contributor can refactor one without re-reading the whole skill.
+- Number prefix (`01-`, `02-`) defines execution order. Use 10-step increments only if you genuinely expect to insert phases later; otherwise keep them tight.
+
+Reference shape: `omc-setup` from oh-my-claudecode. Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
 
 ## Plugin layout contract
 
@@ -85,4 +121,4 @@ Anything that touches MCP wiring (new server, env var rename, shim change, trans
 
 - `.omc/` is git-ignored and holds local OMC runtime state (sessions, project memory, HUD cache) — never commit it.
 - `.env` is git-ignored; only `.env.example` is checked in. Never put real keys in the example.
-- The repo lives at `github.com/Tianyi-Billy-Ma/Oh-My-Research` per `plugin.json`; the `name` field there (`oh-my-research`) is what shows up as the plugin namespace inside Claude Code.
+- The repo lives at `github.com/Tianyi-Billy-Ma/Oh-My-Research`; the **plugin name** in `plugin.json` is `omr` (the namespace), not `oh-my-research`. Don't conflate the repo name with the plugin name.

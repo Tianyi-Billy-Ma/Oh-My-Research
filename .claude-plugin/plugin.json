@@ -1,7 +1,7 @@
 {
-  "name": "oh-my-research",
-  "description": "Research workflows and skills for Claude Code.",
-  "version": "0.3.0",
+  "name": "omr",
+  "description": "Oh-My-Research (omr) — research workflows and skills for Claude Code.",
+  "version": "0.6.0",
   "author": {
     "name": "Tianyi (Billy) Ma"
   },
@@ -12,6 +12,8 @@
     "claude-code",
     "plugin",
     "skills",
-    "research"
+    "research",
+    "omr",
+    "oh-my-research"
   ]
 }
