@@ -1,4 +1,4 @@
-# Phase 4 — Verify
+# Phase 5 — Verify
 
 **Goal:** explain how the user picks up the new state, persist the
 "configured" marker so subsequent runs can short-circuit, and close the loop.
@@ -6,9 +6,10 @@ No probing, no MCP calls — guidance + bookkeeping only.
 
 ## Steps
 
-### 4.1 Reload guidance
+### 5.1 Reload guidance
 
-Tailor the advice to what Phase 3 actually did:
+Tailor the advice to what Phase 3 (CLAUDE.md install) and Phase 4
+(remediation) actually did:
 
 - **`.env` was created or already existed and the user just edited it
   (stdio servers):**
@@ -23,16 +24,23 @@ Tailor the advice to what Phase 3 actually did:
   `claude`. A `/mcp` reconnect inside an already-running session will not
   pick up the new env.
 
+- **CLAUDE.md was installed or refreshed (Phase 3):**
+  The new instructions take effect on the next Claude Code session in that
+  scope. Project-level (`./.claude/CLAUDE.md`) applies on next `claude`
+  launch in that directory; global (`~/.claude/CLAUDE.md`) applies on
+  every new session. No reload trick exists for the currently-running
+  session — restart to pick up.
+
 - **Audit-only run or nothing changed:**
   Just point at `/mcp` for live status. Don't suggest a restart.
 
 If a scope flag was set, mention what was deferred so the user knows the
 state is partial:
 
-> Scope `--local` ran — HTTP gaps (if any) remain. Rerun `/omr:setup
-> --global` when you're ready to wire shell exports.
+> Scope `--local` ran — HTTP gaps (if any) and global CLAUDE.md install
+> remain. Rerun `/omr:setup --global` when you're ready.
 
-### 4.2 Persist the configured marker
+### 5.2 Persist the configured marker
 
 **Skip this step entirely if `audit_only` is true** — audit runs are
 read-only by contract.
@@ -53,6 +61,9 @@ Write a JSON blob with these fields:
 - `lastScope`: `local`, `global`, or `all`.
 - `tokensReachableAtSetup`: per-server bool map — true when Phase 2 said
   `✓ set`. Do NOT include the token values; the names are the keys.
+- `claudeMdTargets`: list of CLAUDE.md paths Phase 3 actually wrote to
+  (empty list if Phase 3 was skipped or all targets were
+  `ALREADY_INSTALLED`).
 
 Procedure:
 
@@ -68,15 +79,16 @@ Procedure:
 
 The marker is **global** (per Claude Code config dir), not per-project — it
 records that the user has been through this flow at least once. Per-project
-state is encoded by the presence/contents of `./.env` itself.
+state is encoded by the presence/contents of `./.env` and
+`./.claude/CLAUDE.md` themselves.
 
-### 4.3 Audit-only marker update
+### 5.3 Audit-only marker update
 
 If `audit_only` is true and `.omr-config.json` already exists, update only
 `lastAuditAt` to the current ISO timestamp (preserving every other field).
 If it doesn't exist, do nothing — audit alone isn't enough to claim setup.
 
-### 4.4 Smoke check pointer
+### 5.4 Smoke check pointer
 
 > Run `/mcp` and look for each of the five servers under "Connected". If
 > any show as disconnected after a reload, rerun `/omr:setup --audit` to
@@ -85,14 +97,15 @@ If it doesn't exist, do nothing — audit alone isn't enough to claim setup.
 
 Do **not** call an MCP tool from this skill as a smoke test.
 
-### 4.5 Wrap-up summary
+### 5.5 Wrap-up summary
 
-Print a final block populated from Phase 2 + Phase 3 state:
+Print a final block populated from Phase 2, 3, and 4 state:
 
 ```
 ✓ Reachable now:    exa, tavily, github
 ↻ Pending user:     brave-search (edit ./.env), huggingface (shell export)
 ✗ Unmappable:       (none)
+CLAUDE.md:          ~/.claude/CLAUDE.md (REFRESH v0.6.0 → v0.7.0)
 Scope:              all
 Marker written:     ~/.claude/.omr-config.json
 ```
@@ -100,7 +113,7 @@ Marker written:     ~/.claude/.omr-config.json
 Empty sections can be elided. The `Marker written` line is omitted on
 audit-only runs.
 
-### 4.6 Pointer for repeat runs
+### 5.6 Pointer for repeat runs
 
 End with one line:
 

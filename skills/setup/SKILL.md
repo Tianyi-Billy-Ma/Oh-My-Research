@@ -3,14 +3,16 @@ name: setup
 description: |
   Install, configure, and health-check Oh-My-Research (omr). The umbrella
   entry point for every "I just enabled this plugin, now what?" question.
-  Today it covers MCP token audits for the five bundled servers (Exa,
-  Tavily, Brave Search, GitHub, Hugging Face), `.env` scaffolding, and a
-  configured-state marker so repeat runs are cheap. Future plugin
-  sub-systems (model defaults, agent installs, project-local config)
-  plug in as new phases here. Use when the user says "omr-setup",
-  "omr:setup", "setup omr", "set up Oh-My-Research", "configure omr",
-  "check omr status", "omr health check", or otherwise asks to install /
-  configure / health-check this plugin.
+  Today it covers: installing omr's instructions into the user-level or
+  project-level CLAUDE.md via a versioned marker block, MCP token audits
+  for the five bundled servers (Exa, Tavily, Brave Search, GitHub,
+  Hugging Face), `.env` scaffolding, and a configured-state marker so
+  repeat runs are cheap. Future plugin sub-systems (model defaults,
+  agent installs, project-local config) plug in as new phases here.
+  Use when the user says "omr-setup", "omr:setup", "setup omr",
+  "set up Oh-My-Research", "configure omr", "check omr status",
+  "omr health check", "refresh omr CLAUDE.md", or otherwise asks to
+  install / configure / health-check this plugin.
 level: 2
 ---
 
@@ -30,8 +32,9 @@ environment variable is set.
 
 Choose this skill when the user wants to **install, configure, or health-check
 Oh-My-Research itself**. Setup is the umbrella entry point for everything that
-lives "around" the plugin — MCP wiring today, additional sub-systems (model
-defaults, agent installs, project-local config, hooks) as they get added.
+lives "around" the plugin — CLAUDE.md installation and MCP wiring today,
+additional sub-systems (model defaults, agent installs, project-local config,
+hooks) as they get added.
 
 When new setup concerns land, they're added as new phases under this skill —
 not as separate skills — so users have one consistent place to fix any "I
@@ -39,6 +42,9 @@ just installed omr, now what?" issue.
 
 Today's coverage:
 
+- Install (or refresh) omr's instructions block into the user's CLAUDE.md
+  via a versioned marker (`<!-- BEGIN omr version="X.Y.Z" -->`) so future
+  Claude Code sessions know about the plugin without re-discovery.
 - Audit tokens for the five bundled MCP servers (Exa, Tavily, Brave Search,
   GitHub, Hugging Face) and surface which ones are missing.
 - Scaffold a project-local `.env` from `.env.example` on consent.
@@ -57,10 +63,10 @@ Inspect the user's invocation for flags. Accept any combination unless noted.
 | --- | --- |
 | `--help` | Print the help text below and stop. |
 | `--audit` (alias `--check`) | Read-only: run Phase 1 + Phase 2 only. No file writes. Does not update the config marker. |
-| `--local` | Scope remediation to the project-local `.env` (stdio servers). HTTP gaps are listed but not acted on. |
-| `--global` | Scope remediation to shell exports (HTTP servers + global stdio tokens). `.env` scaffolding is skipped. |
+| `--local` | Scope to project-local files: CLAUDE.md install targets `./.claude/CLAUDE.md`; remediation only acts on `.env`. HTTP gaps and the global CLAUDE.md are listed but not touched. |
+| `--global` | Scope to user-level files: CLAUDE.md install targets `~/.claude/CLAUDE.md`; remediation only emits shell-export advice. The project `.env` is left alone. |
 | `--force` | Skip the "already configured" pre-check; rerun the full flow regardless. |
-| (no flags) | Pre-check first; if already configured, offer a quick re-audit; otherwise run the full flow. |
+| (no flags) | Pre-check first; if already configured, offer a quick re-audit; otherwise run the full flow, asking interactively where to install CLAUDE.md. |
 
 **Conflicts:**
 
@@ -74,13 +80,13 @@ Inspect the user's invocation for flags. Accept any combination unless noted.
 When the user passes `--help`, print this and stop:
 
 ```
-omr:setup — configure Oh-My-Research MCP servers
+omr:setup — install, configure, and health-check Oh-My-Research
 
 USAGE:
   /omr:setup            Pre-check, then full flow if not already configured
   /omr:setup --audit    Read-only: discover + audit, no file changes
-  /omr:setup --local    Full flow scoped to project-local .env
-  /omr:setup --global   Full flow scoped to shell exports
+  /omr:setup --local    Full flow scoped to project-local files
+  /omr:setup --global   Full flow scoped to user-level files
   /omr:setup --force    Skip pre-check, rerun full flow from scratch
   /omr:setup --help     Show this help
 
@@ -88,21 +94,21 @@ MODES:
   Default (no flags)
     Reads ~/.claude/.omr-config.json. If you've completed setup before,
     offers a quick re-audit short-circuit. Otherwise: discover → audit →
-    remediate → verify.
+    install CLAUDE.md → remediate → verify, asking interactively for the
+    CLAUDE.md install scope.
 
   Audit (--audit / --check)
     Phase 1 + Phase 2 only. Probes tokens, prints the status table,
     stops. No filesystem writes, no consent prompts.
 
   Local (--local)
-    Discover → audit → remediate (project-local .env only) → verify.
-    Use when you only want to fix stdio-server tokens via .env and don't
-    care about shell exports right now.
+    Discover → audit → install (./.claude/CLAUDE.md) → remediate (.env
+    only) → verify. Use when you only want to wire this one project.
 
   Global (--global)
-    Discover → audit → remediate (shell exports only) → verify.
-    Use when you only want to set up shell-exported tokens (required for
-    HTTP MCPs) and aren't using project-local .env.
+    Discover → audit → install (~/.claude/CLAUDE.md) → remediate (shell
+    exports only) → verify. Use when you want omr to apply to every
+    Claude Code session for your user.
 
   Force (--force)
     Bypass the already-configured pre-check and rerun the full flow
@@ -112,6 +118,8 @@ SAFETY:
   - Never prints token values.
   - Never writes a token on your behalf.
   - Asks for explicit consent before any file write.
+  - Backs up existing CLAUDE.md to CLAUDE.md.backup.YYYY-MM-DD before any
+    refresh, and never full-overwrites (insert-block only).
 
 For more info: https://github.com/Tianyi-Billy-Ma/Oh-My-Research
 ```
@@ -128,11 +136,20 @@ the user.
 2. **Never write a token to disk.** Scaffolding `.env` from `.env.example` is
    fine; writing values is the user's job.
 3. **Always ask before mutating the filesystem.** Use AskUserQuestion before
-   `cp .env.example .env` or any other write. Read-only probes don't need
-   consent.
+   `cp .env.example .env`, before any CLAUDE.md write, or any other mutation.
+   Read-only probes don't need consent.
 4. **HTTP MCPs ignore `.env`.** Don't suggest a `.env` fix for `github` or
    `huggingface` (or any future HTTP-transport server). Only shell exports
    (or `direnv` etc.) work.
+5. **Never full-overwrite CLAUDE.md.** Phase 3 uses a marker block; if the
+   markers are unbalanced or nested, stop and ask the user to fix manually.
+6. **Always use the `AskUserQuestion` tool for user-facing questions.** Every
+   consent prompt, scope choice, conflict resolution, or branch decision goes
+   through the built-in `AskUserQuestion` tool with explicit options — never
+   write a plain-text question into the chat and wait for a free-form reply.
+   This applies in SKILL.md (the already-configured prompt) and in every
+   phase. If a phase's instructions seem to suggest a plain-text question,
+   treat that as a bug and use `AskUserQuestion` anyway.
 
 ## Pre-setup check: already configured?
 
@@ -167,7 +184,8 @@ Use AskUserQuestion (single-select) with this question and three options:
 
 1. **Re-audit only** — Phase 1 + Phase 2, no changes. (Recommended for routine
    health checks.)
-2. **Re-run full setup** — discover → audit → remediate → verify.
+2. **Re-run full setup** — discover → audit → install CLAUDE.md → remediate →
+   verify.
 3. **Cancel** — exit without changes.
 
 Branch accordingly:
@@ -185,8 +203,9 @@ its instructions exactly. Pass the parsed flags (`scope`, `audit_only`,
 1. **Phase 1 — Discover**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/01-discover.md`.
 2. **Phase 2 — Audit**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/02-audit.md`.
    - Stop after this phase if `audit_only` is true.
-3. **Phase 3 — Remediate**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/03-remediate.md`.
-4. **Phase 4 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/04-verify.md`.
+3. **Phase 3 — Install CLAUDE.md**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/03-install-claude-md.md`.
+4. **Phase 4 — Remediate**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/04-remediate.md`.
+5. **Phase 5 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/05-verify.md`.
 
 Each phase ends with a one-line handoff that you echo to the user before
 moving on; don't silently jump phases.

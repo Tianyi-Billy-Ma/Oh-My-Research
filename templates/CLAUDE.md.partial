@@ -1,0 +1,45 @@
+## Oh-My-Research (omr) plugin
+
+The omr plugin is enabled in this workspace
+(https://github.com/Tianyi-Billy-Ma/Oh-My-Research). It ships
+research-oriented skills and MCP servers for autoresearch / viberesearch
+workflows in Claude Code.
+
+### Skills
+
+Invoke via `/omr:<name>`:
+
+- `setup` — install, configure, and health-check omr. The umbrella entry
+  point for any "I just enabled this plugin, now what?" question.
+
+Run `/omr:setup --help` for the current list. New skills land here as the
+plugin grows; the slash-command prefix is always `omr:`.
+
+### MCP servers
+
+Five servers declared in the plugin's `.mcp.json`:
+
+- `exa`, `tavily`, `brave-search` — web search (stdio, fetched via `npx`).
+- `github` — GitHub APIs (HTTP, requires `GITHUB_PERSONAL_ACCESS_TOKEN`).
+- `huggingface` — Hugging Face Hub (HTTP, requires `HF_TOKEN`).
+
+Token resolution: shell env first, then project-local `.env` (stdio servers
+only — HTTP servers read shell env only). Never echo or persist token
+values; use `/omr:setup` to audit.
+
+### Conventions
+
+- Plugin namespace is `omr` (short for Oh-My-Research). The full name lives
+  in the description; `omr` is the slash-command prefix everywhere.
+- Project-scoped omr state (if any) lives at `.omr/` (gitignored).
+- **Always use the `AskUserQuestion` tool for user-facing questions.**
+  Consent prompts, scope choices, conflict resolutions, branch decisions —
+  every interactive question goes through `AskUserQuestion` with explicit
+  options, never a plain-text "what do you want to do?" left for free-form
+  reply. This applies inside omr skills and to any other interaction in a
+  session where omr is enabled.
+
+### Where to learn more
+
+- `/omr:setup` for first-time configuration and health checks.
+- Plugin README at https://github.com/Tianyi-Billy-Ma/Oh-My-Research.
