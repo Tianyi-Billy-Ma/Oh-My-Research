@@ -1,21 +1,29 @@
 ---
+id: setup
 name: setup
-description: |
-  Install, configure, and health-check Oh-My-Research (omr). The umbrella
-  entry point for every "I just enabled this plugin, now what?" question.
-  Today it covers: installing omr's instructions into the user-level or
-  project-level CLAUDE.md via a versioned marker block, MCP token audits
-  for the five bundled servers (Exa, Tavily, Brave Search, GitHub,
-  Hugging Face), `.env` scaffolding, an optional HPC / remote-server
-  YAML config installer for future compute-routing skills, and a
-  configured-state marker so repeat runs are cheap. Future plugin
-  sub-systems (model defaults, agent installs, project-local config)
-  plug in as new phases here. Use when the user says "omr-setup",
-  "omr:setup", "setup omr", "set up Oh-My-Research", "configure omr",
-  "check omr status", "omr health check", "refresh omr CLAUDE.md",
-  "configure omr HPC", "add omr cluster", or otherwise asks to install /
-  configure / health-check this plugin.
-level: 2
+version: 0.8.2
+description: |-
+  Install, configure, and health-check Oh-My-Research (omr).
+stages: ["setup"]
+tools: ["Bash", "Read", "Write", "Edit", "AskUserQuestion"]
+summary: |-
+  Umbrella entry point for omr install / config / health-check. Covers MCP token audit, CLAUDE.md install via versioned marker block, .env scaffolding, optional HPC YAML config, and a configured-state marker so repeat runs short-circuit to a quick re-audit.
+primaryIntent: setup
+intents: ["setup", "configuration"]
+capabilities: ["tooling"]
+domains: ["general"]
+keywords: ["omr-setup", "omr:setup", "setup omr", "set up oh-my-research", "configure omr", "check omr status", "omr health check", "refresh omr claude.md", "configure omr hpc", "add omr cluster", "install omr"]
+source: builtin
+status: experimental
+resourceFlags:
+  hasReferences: false
+  hasScripts: false
+  hasTemplates: false
+  hasAssets: false
+  referenceCount: 0
+  scriptCount: 0
+  templateCount: 0
+  assetCount: 0
 ---
 
 # omr:setup
