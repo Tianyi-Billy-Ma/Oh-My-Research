@@ -1,7 +1,7 @@
 ---
 id: setup
 name: setup
-version: 0.8.2
+version: 0.8.3
 description: |-
   Install, configure, and health-check Oh-My-Research (omr).
 stages: ["setup"]
@@ -18,11 +18,11 @@ status: experimental
 resourceFlags:
   hasReferences: false
   hasScripts: false
-  hasTemplates: false
+  hasTemplates: true
   hasAssets: false
   referenceCount: 0
   scriptCount: 0
-  templateCount: 0
+  templateCount: 2
   assetCount: 0
 ---
 
@@ -59,7 +59,7 @@ Today's coverage:
   GitHub, Hugging Face) and surface which ones are missing.
 - Scaffold a project-local `.env` from `.env.example` on consent.
 - Optionally drop a per-cluster HPC / remote-server YAML config file (from
-  `templates/hpc.yaml`) into `~/.claude/hpc/<id>.yaml` or
+  `skills/setup/templates/hpc.yaml`) into `~/.claude/hpc/<id>.yaml` or
   `./.omr/hpc/<id>.yaml` so future compute-routing skills know where to
   send jobs. The phase never modifies `~/.ssh/config` and never runs SSH
   commands — it's pure config installation.

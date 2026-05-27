@@ -9,7 +9,7 @@ target. This phase is always optional and easy to opt out of.
 
 - **YAML-config-only.** Never touch `~/.ssh/config`. Never run `ssh-keygen`,
   `ssh-copy-id`, or any other authentication command on the user's behalf.
-- **Universal templates only.** The plugin ships `templates/hpc.yaml`; it
+- **Universal templates only.** The plugin ships `skills/setup/templates/hpc.yaml`; it
   does not ship site-specific (`nersc-perlmutter.yaml`, etc.) defaults.
   Users edit the rendered file with their real values.
 - **Opt-out is sticky.** A `Never` answer at the top gate persists as
@@ -65,7 +65,7 @@ version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` → `.version`.
 
 ```bash
 OMR_VERSION=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json")
-RENDERED=$(sed "s/{{omr_version}}/${OMR_VERSION}/g" "${CLAUDE_PLUGIN_ROOT}/templates/hpc.yaml")
+RENDERED=$(sed "s/{{omr_version}}/${OMR_VERSION}/g" "${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/hpc.yaml")
 ```
 
 Subsequent steps (`5.5` classification, `5.6` writes) operate on `RENDERED`,
@@ -108,7 +108,7 @@ to be clever about whitespace.
 **CREATE_NEW:** write `RENDERED` to the destination (don't `cp` the raw
 template — write the version-substituted string). Confirm to the user:
 
-> Wrote `<destination>` from `templates/hpc.yaml` (template_version
+> Wrote `<destination>` from `skills/setup/templates/hpc.yaml` (template_version
 > `<OMR_VERSION>`). Open it and replace the `<...>` placeholders with
 > your real values.
 

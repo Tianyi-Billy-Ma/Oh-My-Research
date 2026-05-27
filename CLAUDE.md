@@ -72,16 +72,17 @@ When a skill needs to inject plugin content into a user-owned file:
 - **Stop on malformed state.** If the markers are unbalanced or nested, do
   not try to repair. Stop and ask the user.
 
-The canonical content for each marker block lives under `templates/` (e.g.
-`templates/CLAUDE.md.partial`), versioned alongside the rest of the plugin.
-Bump `plugin.json` version whenever a template's content changes — that's the
-signal for installed instances to refresh on next setup run.
+The canonical content for each marker block lives under the owning skill's
+`templates/` directory (e.g. `skills/setup/templates/CLAUDE.md.partial`),
+versioned alongside the rest of the plugin. Bump `plugin.json` version
+whenever a template's content changes — that's the signal for installed
+instances to refresh on next setup run.
 
-## Skill convention: per-resource YAML templates (`templates/<name>.yaml`)
+## Skill convention: per-resource YAML templates (`skills/<skill>/templates/<name>.yaml`)
 
-For resources that are pure config (not docs), ship a YAML template at
-`templates/<resource>.yaml` and have a setup phase copy it to a user-chosen
-destination on consent. Pattern conventions:
+For resources that are pure config (not docs), ship a YAML template under the
+owning skill's `templates/` directory and have a phase copy it to a
+user-chosen destination on consent. Pattern conventions:
 
 - **Template content is universal.** No personal infra, no site-specific
   defaults. Every concrete value is a `<placeholder>` the user fills in.
@@ -108,7 +109,12 @@ destination on consent. Pattern conventions:
   authentication commands (`ssh-keygen`, `ssh-copy-id`, etc.) on the user's
   behalf.
 
-Current example: `templates/hpc.yaml` (installed by Phase 5 of `omr:setup`).
+Current example: `skills/setup/templates/hpc.yaml` (installed by Phase 5 of `omr:setup`).
+
+**Where templates live.** Skill-local (`skills/<skill>/templates/`) when only
+one skill owns the template — the default. Promote to a shared location only
+once a second skill genuinely needs the same template; speculative sharing is
+worse than a clean move later.
 
 ## Plugin layout contract
 
@@ -120,9 +126,11 @@ Oh-My-Research/
 │   └── plugin.json          # ONLY file under .claude-plugin/
 ├── .mcp.json                # MCP server declarations loaded by the plugin
 ├── bin/                     # plugin-internal scripts (e.g. env loader shim)
-├── templates/               # canonical content injected into user files (e.g. CLAUDE.md.partial, hpc.yaml)
 ├── skills/                  # one folder per skill, each containing SKILL.md
-│   └── <skill-name>/SKILL.md
+│   └── <skill-name>/
+│       ├── SKILL.md
+│       ├── phases/          # for multi-step skills (see "thin router + phases" below)
+│       └── templates/       # canonical content this skill installs into user files
 ├── agents/                  # optional: <name>.md agent definitions
 ├── hooks/                   # optional: hooks.json
 └── commands/                # optional: slash-command markdown files
