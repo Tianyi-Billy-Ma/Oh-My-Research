@@ -77,6 +77,36 @@ The canonical content for each marker block lives under `templates/` (e.g.
 Bump `plugin.json` version whenever a template's content changes — that's the
 signal for installed instances to refresh on next setup run.
 
+## Skill convention: per-resource YAML templates (`templates/<name>.yaml`)
+
+For resources that are pure config (not docs), ship a YAML template at
+`templates/<resource>.yaml` and have a setup phase copy it to a user-chosen
+destination on consent. Pattern conventions:
+
+- **Template content is universal.** No personal infra, no site-specific
+  defaults. Every concrete value is a `<placeholder>` the user fills in.
+- **`template_version` field at the top** lets future setup runs diff the
+  installed copy against the shipped one. Bump the field whenever the
+  template's schema or comments meaningfully change.
+- **Comments carry the docs.** A YAML block at the bottom (between two
+  `# ---` rulers) serves as quick-reference text — readable in any editor,
+  invisible to parsers.
+- **Scope-aware destination.** Install to `~/.claude/<resource>/<id>.yaml`
+  (global) or `./.omr/<resource>/<id>.yaml` (project-local). Future skills
+  that read these resolve project-local first, then user-global — same
+  precedence as `.env`.
+- **Refresh policy is diff-check.** If the installed file matches the
+  shipped template byte-for-byte, treat as `ALREADY_PRISTINE`. If it
+  differs, AskUserQuestion: keep mine / overwrite / save alongside as
+  `<id>.new.yaml`. One backup per file per day before any overwrite.
+- **Never touch system config.** A YAML template never modifies
+  `~/.ssh/config`, `/etc/hosts`, or anything else outside its own
+  destination tree. The setup phase that installs it also never runs
+  authentication commands (`ssh-keygen`, `ssh-copy-id`, etc.) on the user's
+  behalf.
+
+Current example: `templates/hpc.yaml` (installed by Phase 5 of `omr:setup`).
+
 ## Plugin layout contract
 
 Follow the official Claude Code plugin template exactly — the README pins this and the loader depends on it:
@@ -87,7 +117,7 @@ Oh-My-Research/
 │   └── plugin.json          # ONLY file under .claude-plugin/
 ├── .mcp.json                # MCP server declarations loaded by the plugin
 ├── bin/                     # plugin-internal scripts (e.g. env loader shim)
-├── templates/               # canonical content injected into user files (e.g. CLAUDE.md.partial)
+├── templates/               # canonical content injected into user files (e.g. CLAUDE.md.partial, hpc.yaml)
 ├── skills/                  # one folder per skill, each containing SKILL.md
 │   └── <skill-name>/SKILL.md
 ├── agents/                  # optional: <name>.md agent definitions

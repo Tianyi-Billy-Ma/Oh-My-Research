@@ -1,0 +1,64 @@
+# HPC / remote server config. Copy this file to ~/.claude/hpc/<your-id>.yaml
+# (global) or ./.omr/hpc/<your-id>.yaml (project-local). Replace every <...>
+# with a real value; delete lines you don't need.
+
+id: <pick-an-id>                           # filename uses this. e.g. acme-slurm, lab-workstation
+template_version: 1.0.0
+
+hostname: <login-hostname>                 # e.g. login.example-hpc.edu
+user: <your-username>
+port: 22
+
+auth:
+  vpn_required: false                      # set true if host sits behind a VPN
+  two_fa: none                             # one of: none, duo, totp, yubikey, push
+  key_path: ~/.ssh/id_ed25519              # local SSH key registered with the host
+
+scheduler:
+  type: <slurm|pbs|sge|none>               # "none" for plain SSH boxes / single workstations
+  # SLURM fields (uncomment if type=slurm):
+  # account: <allocation-account>
+  # default_partition: <partition>         # e.g. gpu, compute, normal
+  # default_qos: <qos-or-blank>
+  # default_time: 04:00:00                 # HH:MM:SS
+  # max_time: <site-max>
+  #
+  # PBS / Torque fields (uncomment if type=pbs):
+  # queue: <queue>
+  # walltime: 04:00:00
+  # resources: <e.g. nodes=1:ppn=16:gpus=1>
+  #
+  # SGE fields (uncomment if type=sge):
+  # queue: <queue>
+  # parallel_environment: <pe-name>
+  # slots: <N>
+
+storage:
+  home: <home-path>                        # e.g. /home/<user>
+  scratch: <scratch-path-or-blank>         # high-throughput; often purged
+  project: <project-path-or-blank>         # shared, long-term
+  scratch_purge_days: <N-or-blank>         # leave blank if scratch isn't purged
+
+modules:
+  default: []                              # e.g. [python/3.11, cuda/12.4]
+  notes: ""                                # cluster-specific module quirks
+
+env:
+  conda_root: <path-or-blank>              # where conda envs live on the cluster
+  uv_cache: <path-or-blank>                # where uv cache should live on the cluster
+
+docs:
+  - <https://example.org/docs/>            # link(s) to your cluster's docs
+
+# -----------------------------------------------------------------------------
+# Quick reference (comments only — not parsed by tooling).
+#
+# Connect:
+#   ssh <user>@<hostname>
+#   If VPN required, connect to VPN first. 2FA prompts (Duo/code) appear each session.
+#
+# SLURM:  sbatch script.sh | squeue -u $USER | scancel <id> | sinfo | sacct -j <id>
+# PBS:    qsub script.sh   | qstat -u $USER  | qdel <id>    | pbsnodes
+# SGE:    qsub script.sh   | qstat -u $USER  | qdel <id>    | qhost
+# Plain:  ssh, then run commands directly.
+# -----------------------------------------------------------------------------
