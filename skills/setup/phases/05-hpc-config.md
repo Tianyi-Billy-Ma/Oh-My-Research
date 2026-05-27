@@ -57,7 +57,22 @@ the user wants to configure. Suggest examples:
 Validate: must match `^[a-z][a-z0-9-]{0,30}$`. If invalid, ask again with a
 clarifying note. The ID becomes the filename — `<id>.yaml`.
 
-### 5.3 Resolve destination
+### 5.3 Render the template
+
+Before any classification or write, render the shipped template by
+substituting `{{omr_version}}` with the current plugin version. Read the
+version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` → `.version`.
+
+```bash
+OMR_VERSION=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json")
+RENDERED=$(sed "s/{{omr_version}}/${OMR_VERSION}/g" "${CLAUDE_PLUGIN_ROOT}/templates/hpc.yaml")
+```
+
+Subsequent steps (`5.5` classification, `5.6` writes) operate on `RENDERED`,
+not the raw template. This keeps the installed YAML's `template_version`
+in lockstep with the plugin version it was installed under.
+
+### 5.4 Resolve destination
 
 Determine the install path based on the scope flag from SKILL.md:
 
@@ -73,51 +88,52 @@ Determine the install path based on the scope flag from SKILL.md:
 
 `mkdir -p` the parent directory before any write.
 
-### 5.4 Check existing state
+### 5.5 Check existing state
 
-Classify the destination:
+Classify the destination by comparing against the **rendered** template
+from 5.3 (not the raw file on disk):
 
 | State | Action |
 | --- | --- |
 | File does not exist | `CREATE_NEW` |
-| File exists, byte-identical to `templates/hpc.yaml` | `ALREADY_PRISTINE` (effectively reinstall — no user edits to preserve) |
-| File exists, has been edited from the template | `REFRESH_DECISION` (ask user) |
-| File exists, but starts with a different `template_version` than the shipped template | `VERSION_MISMATCH` (also ask user) |
+| File byte-identical to `RENDERED` | `ALREADY_PRISTINE` (no user edits to preserve) |
+| File `template_version` matches `OMR_VERSION` but content differs | `REFRESH_DECISION` (user edited it) |
+| File `template_version` differs from `OMR_VERSION` | `VERSION_MISMATCH` (template itself changed) |
 
-For diff detection, do a byte-level compare against the source template.
-Don't try to be clever about whitespace.
+For diff detection, do a byte-level compare against `RENDERED`. Don't try
+to be clever about whitespace.
 
-### 5.5 Write / refresh
+### 5.6 Write / refresh
 
-**CREATE_NEW:** copy `${CLAUDE_PLUGIN_ROOT}/templates/hpc.yaml` to the
-destination. Confirm to the user:
+**CREATE_NEW:** write `RENDERED` to the destination (don't `cp` the raw
+template — write the version-substituted string). Confirm to the user:
 
 > Wrote `<destination>` from `templates/hpc.yaml` (template_version
-> `<template_version>`). Open it and replace the `<...>` placeholders with
+> `<OMR_VERSION>`). Open it and replace the `<...>` placeholders with
 > your real values.
 
 **ALREADY_PRISTINE:** echo one line, no write:
 
 > `<destination>` is already at the current template (template_version
-> `<template_version>`). Nothing to do.
+> `<OMR_VERSION>`). Nothing to do.
 
 **REFRESH_DECISION** or **VERSION_MISMATCH:** ask via `AskUserQuestion`:
 
 > `<destination>` already exists and has been edited / uses an older
-> template. What now?
+> template_version (`<file's version>` → `<OMR_VERSION>`). What now?
 
 Options:
 1. **Keep mine** — leave the file untouched.
 2. **Overwrite with new template** — back up the existing file to
    `<destination>.backup.YYYY-MM-DD` (skip backup if a backup from today
-   already exists), then copy the shipped template over it.
-3. **Save new template alongside** — write the shipped template to
-   `<destination>.new.yaml` so the user can diff and merge manually. Leave
-   the existing file unchanged.
+   already exists), then write `RENDERED` over it.
+3. **Save new template alongside** — write `RENDERED` to
+   `<destination>.new.yaml` so the user can diff and merge manually.
+   Leave the existing file unchanged.
 
 Act on the choice. Do not assume.
 
-### 5.6 Record for Phase 6
+### 5.7 Record for Phase 6
 
 Pass forward to Phase 6 (which writes `.omr-config.json`):
 
@@ -126,7 +142,7 @@ hpc_phase: configured        # or "skipped" / "opted_out"
 hpc_record:                  # null if skipped/opted-out
   id: <id>
   dest: <absolute path>
-  templateVersion: <from-template>
+  templateVersion: <OMR_VERSION>      # always equal to the omr plugin version at install
   action: CREATE_NEW | ALREADY_PRISTINE | OVERWROTE | SAVED_ALONGSIDE | KEPT_MINE
   backedUpTo: <path-or-null>
 ```
@@ -134,7 +150,7 @@ hpc_record:                  # null if skipped/opted-out
 Phase 6 appends this to a `hpcConfigs` array in `.omr-config.json`,
 deduping by `dest`.
 
-### 5.7 Tell the user what to do next
+### 5.8 Tell the user what to do next
 
 Print a short next-steps block:
 

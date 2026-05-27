@@ -85,9 +85,12 @@ destination on consent. Pattern conventions:
 
 - **Template content is universal.** No personal infra, no site-specific
   defaults. Every concrete value is a `<placeholder>` the user fills in.
-- **`template_version` field at the top** lets future setup runs diff the
-  installed copy against the shipped one. Bump the field whenever the
-  template's schema or comments meaningfully change.
+- **`template_version` tracks the omr plugin version.** Set the field
+  literally to `{{omr_version}}` in the shipped template; the install
+  phase substitutes the current value from `plugin.json` at install time.
+  This keeps every installed YAML in lockstep with the plugin version
+  that wrote it, so future setup runs can detect drift via a simple
+  version compare. Don't manage a separate per-template version number.
 - **Comments carry the docs.** A YAML block at the bottom (between two
   `# ---` rulers) serves as quick-reference text — readable in any editor,
   invisible to parsers.

@@ -3,7 +3,7 @@
 # with a real value; delete lines you don't need.
 
 id: <pick-an-id>                           # filename uses this. e.g. acme-slurm, lab-workstation
-template_version: 1.0.0
+template_version: {{omr_version}}          # resolved to the omr plugin version at install time
 
 hostname: <login-hostname>                 # e.g. login.example-hpc.edu
 user: <your-username>
