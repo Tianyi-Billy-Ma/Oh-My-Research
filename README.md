@@ -62,7 +62,8 @@ with its tools listed.
 
 | Slash command | Keyword trigger | What it does |
 | --- | --- | --- |
-| `/omr:setup` | `omr-setup` | Audit MCP tokens, scaffold `.env`, point at remediation steps without ever printing secrets. |
+| `/omr:setup` | `omr-setup` | Install, configure, and health-check omr — CLAUDE.md install, MCP token audit, `.env` scaffolding, optional HPC config. |
+| `/omr:doctor` | `omr-doctor` | Read-only diagnostic: plugin integrity, MCP wiring, CLAUDE.md state, token presence, HPC drift, external deps. Points at `/omr:setup` for fixes. |
 
 More skills land here as they're added; all follow the `/omr:<name>`
 convention.

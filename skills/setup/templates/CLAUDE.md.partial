@@ -11,6 +11,9 @@ Invoke via `/omr:<name>`:
 
 - `setup` — install, configure, and health-check omr. The umbrella entry
   point for any "I just enabled this plugin, now what?" question.
+- `doctor` — read-only diagnostic. Verifies plugin integrity, MCP wiring,
+  CLAUDE.md install state, token presence, HPC config drift, and external
+  dependencies. Points at `/omr:setup` for any fix.
 
 Run `/omr:setup --help` for the current list. New skills land here as the
 plugin grows; the slash-command prefix is always `omr:`.
