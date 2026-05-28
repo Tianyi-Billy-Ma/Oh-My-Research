@@ -48,6 +48,12 @@ Rules:
 
 Reference shape: `omc-setup` from oh-my-claudecode. Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
 
+For single-pass / read-only / diagnostic skills, **skip the `phases/` directory** entirely and keep the whole flow in `SKILL.md`. Reference shape: `omc-doctor` from oh-my-claudecode. Our `doctor` skill follows that pattern — one file, numbered diagnostic steps, no consent prompts (it's read-only), aggregate verdict at the end. Use this shape when the work is bounded, sequential, and doesn't branch on user input.
+
+## Skill convention: version field tracks plugin version
+
+The `version:` field in each SKILL.md frontmatter MUST equal the current `plugin.json` version. When you ship a release, bump `plugin.json` and every SKILL.md `version:` field in the same commit. Reason: users seeing `setup v0.8.3` while the plugin is `v0.9.0` is confusing and almost always wrong — the lockstep convention removes that footgun. If a skill genuinely didn't change in a release, the version bump is a no-op for that file, which is fine.
+
 ## Skill convention: ask the user, don't prompt-and-wait
 
 Every user-facing question that a skill asks — consent prompts, scope choices, conflict resolutions, branch decisions — MUST go through the built-in `AskUserQuestion` tool with explicit options. Never write a plain-text question into the chat and wait for a free-form reply.
