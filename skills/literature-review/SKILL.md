@@ -1,7 +1,7 @@
 ---
 id: literature-review
 name: literature-review
-version: 0.10.1
+version: 0.10.2
 argument-hint: [topic-or-url-or-arxiv-id]
 description: |-
   Search, screen, and summarize literature into a structured corpus.
@@ -21,7 +21,7 @@ resourceFlags:
   hasScripts: false
   hasTemplates: true
   hasAssets: false
-  referenceCount: 2
+  referenceCount: 5
   scriptCount: 0
   templateCount: 3
   assetCount: 0
@@ -30,7 +30,7 @@ resourceFlags:
 # omr:literature-review
 
 Thin router for the literature-review flow. The detailed steps live in
-`phases/`; this file decides which phases to run, parses flags, gates on
+`references/`; this file decides which phases to run, parses flags, gates on
 token presence, and enforces cross-phase safety rails.
 
 **When this skill is invoked, immediately execute the workflow below. Do
@@ -183,9 +183,9 @@ Execute these phases in order. For each, read the file at the path and
 follow its instructions exactly. Pass the parsed flags and Phase 1's
 `scope.yaml` content forward.
 
-1. **Phase 1 — Scope**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/phases/01-scope.md`.
-2. **Phase 2 — Search**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/phases/02-search.md`.
-3. **Phase 3 — Summarize**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/phases/03-summarize.md`.
+1. **Phase 1 — Scope**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/references/01-scope.md`.
+2. **Phase 2 — Search**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/references/02-search.md`.
+3. **Phase 3 — Summarize**: `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/references/03-summarize.md`.
 
 If `--audit` was passed, skip phases 1–3 and run the audit-only flow
 described at the bottom of `02-search.md`.
