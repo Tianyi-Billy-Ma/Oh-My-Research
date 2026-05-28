@@ -1,7 +1,7 @@
 ---
 id: setup
 name: setup
-version: 0.10.0
+version: 0.10.1
 description: |-
   Install, configure, and health-check Oh-My-Research (omr).
 stages: ["setup"]
@@ -16,11 +16,11 @@ keywords: ["omr-setup", "omr:setup", "setup omr", "set up oh-my-research", "conf
 source: builtin
 status: experimental
 resourceFlags:
-  hasReferences: false
+  hasReferences: true
   hasScripts: false
   hasTemplates: true
   hasAssets: false
-  referenceCount: 0
+  referenceCount: 6
   scriptCount: 0
   templateCount: 2
   assetCount: 0
@@ -218,13 +218,13 @@ Execute these phases in order. For each, read the file at the path and follow
 its instructions exactly. Pass the parsed flags (`scope`, `audit_only`,
 `force`) and the per-server records from Phase 1 forward to later phases.
 
-1. **Phase 1 — Discover**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/01-discover.md`.
-2. **Phase 2 — Audit**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/02-audit.md`.
+1. **Phase 1 — Discover**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/01-discover.md`.
+2. **Phase 2 — Audit**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/02-audit.md`.
    - Stop after this phase if `audit_only` is true.
-3. **Phase 3 — Install CLAUDE.md**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/03-install-claude-md.md`.
-4. **Phase 4 — Remediate**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/04-remediate.md`.
-5. **Phase 5 — HPC config (optional)**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/05-hpc-config.md`.
-6. **Phase 6 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/06-verify.md`.
+3. **Phase 3 — Install CLAUDE.md**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/03-install-claude-md.md`.
+4. **Phase 4 — Remediate**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/04-remediate.md`.
+5. **Phase 5 — HPC config (optional)**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/05-hpc-config.md`.
+6. **Phase 6 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/references/06-verify.md`.
 
 Each phase ends with a one-line handoff that you echo to the user before
 moving on; don't silently jump phases.

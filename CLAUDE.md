@@ -25,30 +25,35 @@ Skills MUST follow this scheme:
 
 Bias toward over-listing triggers in descriptions — false positives are cheap, false negatives are invisible to the user.
 
-## Skill structure: thin router + phases
+## Skill structure: thin router + numbered references
 
-Any skill whose flow takes more than ~30 lines of instructions MUST split into a thin `SKILL.md` router plus a `phases/` directory:
+Any skill whose flow takes more than ~30 lines of instructions MUST split into a thin `SKILL.md` router plus a `references/` directory holding numbered step files:
 
 ```
 skills/<skill-name>/
-├── SKILL.md                    # router: frontmatter, flag parsing, help text, pre-check, safety rails, phase index
-└── phases/
-    ├── 01-<verb>.md            # one phase per file, numbered
+├── SKILL.md                    # router: frontmatter, flag parsing, help text, pre-check, safety rails, step index
+└── references/
+    ├── 01-<verb>.md            # one step per file, numbered
     ├── 02-<verb>.md
     └── ...
 ```
 
+We use `references/` (not `phases/`) because the inno-figure-gen frontmatter schema we follow has `resourceFlags.hasReferences` but no `hasPhases`. Naming the directory `references/` keeps the resourceFlags semantically accurate (`hasReferences: true`, `referenceCount: N`).
+
 Rules:
 
-- `SKILL.md` lists phases by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/phases/NN-*.md`) and tells the agent to read each in order. Don't inline phase logic. Keep `SKILL.md` to routing concerns: frontmatter, flag parsing, help text, pre-check / already-configured handling, cross-phase safety rails, and the phase index. Routing legitimately runs ~150–200 lines for non-trivial skills; that's fine, but any step-by-step procedure belongs in a phase.
-- Each phase file has a goal, numbered steps, and a one-line **Handoff** at the end that the agent echoes before moving on. This makes interrupted runs resumable and traceable.
-- Cross-phase invariants (safety rails, "never echo secrets", scope guards) belong in `SKILL.md`, not duplicated across phases.
-- Lookup tables, schemas, and provider-specific quirks belong in the phase that needs them — keep phases self-contained so a future contributor can refactor one without re-reading the whole skill.
-- Number prefix (`01-`, `02-`) defines execution order. Use 10-step increments only if you genuinely expect to insert phases later; otherwise keep them tight.
+- `SKILL.md` lists step files by absolute path (`${CLAUDE_PLUGIN_ROOT}/skills/<name>/references/NN-*.md`) and tells the agent to read each in order. Don't inline step logic. Keep `SKILL.md` to routing concerns: frontmatter, flag parsing, help text, pre-check / already-configured handling, cross-skill safety rails, and the step index. Routing legitimately runs ~150–200 lines for non-trivial skills; that's fine, but any step-by-step procedure belongs in a numbered reference file.
+- Each numbered file has a goal, numbered sub-steps, and a one-line **Handoff** at the end that the agent echoes before moving on. This makes interrupted runs resumable and traceable.
+- Cross-step invariants (safety rails, "never echo secrets", scope guards) belong in `SKILL.md`, not duplicated across step files.
+- Lookup tables, schemas, and provider-specific quirks belong in the step that needs them — keep each numbered file self-contained so a future contributor can refactor one without re-reading the whole skill.
+- Number prefix (`01-`, `02-`) defines execution order. Use 10-step increments only if you genuinely expect to insert steps later; otherwise keep them tight.
+- Non-numbered docs (output templates, schema rationale, source priorities, screening rubrics) also live under `references/`. The skill loads them when relevant — they're not part of the ordered execution path.
 
-Reference shape: `omc-setup` from oh-my-claudecode. Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
+Reference shape: `omc-setup` from oh-my-claudecode (theirs uses `phases/`; ours uses `references/` for the schema reason above). Our `setup` skill follows this layout — copy it when authoring new multi-step skills.
 
-For single-pass / read-only / diagnostic skills, **skip the `phases/` directory** entirely and keep the whole flow in `SKILL.md`. Reference shape: `omc-doctor` from oh-my-claudecode. Our `doctor` skill follows that pattern — one file, numbered diagnostic steps, no consent prompts (it's read-only), aggregate verdict at the end. Use this shape when the work is bounded, sequential, and doesn't branch on user input.
+For single-pass / read-only / diagnostic skills, **skip the `references/` directory** entirely and keep the whole flow in `SKILL.md`. Reference shape: `omc-doctor` from oh-my-claudecode. Our `doctor` skill follows that pattern — one file, numbered diagnostic steps, no consent prompts (it's read-only), aggregate verdict at the end. Use this shape when the work is bounded, sequential, and doesn't branch on user input.
+
+**Legacy note:** `literature-review` still uses `phases/`. Migrating it to `references/` is queued as a follow-up; new skills should land on `references/` directly.
 
 ## Skill convention: version field tracks plugin version
 
@@ -135,7 +140,7 @@ Oh-My-Research/
 ├── skills/                  # one folder per skill, each containing SKILL.md
 │   └── <skill-name>/
 │       ├── SKILL.md
-│       ├── phases/          # for multi-step skills (see "thin router + phases" below)
+│       ├── references/      # numbered step files for multi-step skills + supporting docs
 │       └── templates/       # canonical content this skill installs into user files
 ├── agents/                  # optional: <name>.md agent definitions
 ├── hooks/                   # optional: hooks.json
