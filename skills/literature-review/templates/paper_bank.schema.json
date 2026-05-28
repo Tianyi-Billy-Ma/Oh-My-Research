@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Tianyi-Billy-Ma/Oh-My-Research/schemas/paper_bank.json",
+  "title": "omr literature-review paper_bank",
+  "description": "Structured corpus produced by /omr:literature-review. Append-only; dedup by canonical id.",
+  "type": "object",
+  "required": ["schema_version", "slug", "created_at", "papers"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Tracks the omr plugin version that wrote the corpus; resolved at write time from {{omr_version}}."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,80}$",
+      "description": "Workspace slug. Matches the parent directory name."
+    },
+    "research_question": {
+      "type": ["string", "null"],
+      "description": "Copied from scope.yaml at write time; updated on refresh."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_updated_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "papers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Paper" }
+    }
+  },
+  "$defs": {
+    "Paper": {
+      "type": "object",
+      "required": ["id", "title", "authors", "url", "source", "retrieved_at"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical paper ID. DOI preferred (e.g. 10.1234/abcd), then arXiv ID (e.g. 2401.12345), then sha1-12 hash of title for sources without identifiers."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Author list as array of strings. Never empty, never ['TBD']. Drop the entry if unknown."
+        },
+        "year": {
+          "type": ["integer", "null"],
+          "minimum": 1800,
+          "maximum": 2099
+        },
+        "venue": {
+          "type": ["string", "null"],
+          "description": "Conference / journal short name. Empty / null for preprints."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Real paper page. DOI > arXiv > publisher / Semantic Scholar. Never blank, never a placeholder."
+        },
+        "abstract": {
+          "type": ["string", "null"]
+        },
+        "source": {
+          "type": "string",
+          "description": "Comma-joined list of source IDs (in order of first appearance) when the paper was returned by multiple sources. Valid IDs: zotero, local, exa, tavily, brave-search, huggingface, github, web."
+        },
+        "retrieval_query": {
+          "type": ["string", "null"],
+          "description": "The query string that returned this paper, for audit."
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "screening": {
+          "type": ["object", "null"],
+          "description": "Filled by Phase 4 (screening) when added in a follow-up PR. Null in MVP.",
+          "required": ["verdict", "reason", "rubric_version"],
+          "additionalProperties": false,
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": ["included", "excluded", "review"]
+            },
+            "reason": { "type": "string" },
+            "rubric_version": { "type": "string" }
+          }
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-form notes from synthesis or screening; user-editable."
+        }
+      }
+    }
+  }
+}
