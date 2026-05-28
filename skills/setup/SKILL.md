@@ -1,19 +1,29 @@
 ---
+id: setup
 name: setup
-description: |
-  Install, configure, and health-check Oh-My-Research (omr). The umbrella
-  entry point for every "I just enabled this plugin, now what?" question.
-  Today it covers: installing omr's instructions into the user-level or
-  project-level CLAUDE.md via a versioned marker block, MCP token audits
-  for the five bundled servers (Exa, Tavily, Brave Search, GitHub,
-  Hugging Face), `.env` scaffolding, and a configured-state marker so
-  repeat runs are cheap. Future plugin sub-systems (model defaults,
-  agent installs, project-local config) plug in as new phases here.
-  Use when the user says "omr-setup", "omr:setup", "setup omr",
-  "set up Oh-My-Research", "configure omr", "check omr status",
-  "omr health check", "refresh omr CLAUDE.md", or otherwise asks to
-  install / configure / health-check this plugin.
-level: 2
+version: 0.8.3
+description: |-
+  Install, configure, and health-check Oh-My-Research (omr).
+stages: ["setup"]
+tools: ["Bash", "Read", "Write", "Edit", "AskUserQuestion"]
+summary: |-
+  Umbrella entry point for omr install / config / health-check. Covers MCP token audit, CLAUDE.md install via versioned marker block, .env scaffolding, optional HPC YAML config, and a configured-state marker so repeat runs short-circuit to a quick re-audit.
+primaryIntent: setup
+intents: ["setup", "configuration"]
+capabilities: ["tooling"]
+domains: ["general"]
+keywords: ["omr-setup", "omr:setup", "setup omr", "set up oh-my-research", "configure omr", "check omr status", "omr health check", "refresh omr claude.md", "configure omr hpc", "add omr cluster", "install omr"]
+source: builtin
+status: experimental
+resourceFlags:
+  hasReferences: false
+  hasScripts: false
+  hasTemplates: true
+  hasAssets: false
+  referenceCount: 0
+  scriptCount: 0
+  templateCount: 2
+  assetCount: 0
 ---
 
 # omr:setup
@@ -48,6 +58,11 @@ Today's coverage:
 - Audit tokens for the five bundled MCP servers (Exa, Tavily, Brave Search,
   GitHub, Hugging Face) and surface which ones are missing.
 - Scaffold a project-local `.env` from `.env.example` on consent.
+- Optionally drop a per-cluster HPC / remote-server YAML config file (from
+  `skills/setup/templates/hpc.yaml`) into `~/.claude/hpc/<id>.yaml` or
+  `./.omr/hpc/<id>.yaml` so future compute-routing skills know where to
+  send jobs. The phase never modifies `~/.ssh/config` and never runs SSH
+  commands — it's pure config installation.
 - Persist a configured-state marker so repeat runs short-circuit to a quick
   re-audit instead of replaying the full wizard.
 
@@ -63,8 +78,8 @@ Inspect the user's invocation for flags. Accept any combination unless noted.
 | --- | --- |
 | `--help` | Print the help text below and stop. |
 | `--audit` (alias `--check`) | Read-only: run Phase 1 + Phase 2 only. No file writes. Does not update the config marker. |
-| `--local` | Scope to project-local files: CLAUDE.md install targets `./.claude/CLAUDE.md`; remediation only acts on `.env`. HTTP gaps and the global CLAUDE.md are listed but not touched. |
-| `--global` | Scope to user-level files: CLAUDE.md install targets `~/.claude/CLAUDE.md`; remediation only emits shell-export advice. The project `.env` is left alone. |
+| `--local` | Scope to project-local files: CLAUDE.md install targets `./.claude/CLAUDE.md`; remediation only acts on `.env`; HPC configs land in `./.omr/hpc/`. HTTP gaps and global files are listed but not touched. |
+| `--global` | Scope to user-level files: CLAUDE.md install targets `~/.claude/CLAUDE.md`; remediation only emits shell-export advice; HPC configs land in `~/.claude/hpc/`. The project `.env` is left alone. |
 | `--force` | Skip the "already configured" pre-check; rerun the full flow regardless. |
 | (no flags) | Pre-check first; if already configured, offer a quick re-audit; otherwise run the full flow, asking interactively where to install CLAUDE.md. |
 
@@ -143,7 +158,10 @@ the user.
    (or `direnv` etc.) work.
 5. **Never full-overwrite CLAUDE.md.** Phase 3 uses a marker block; if the
    markers are unbalanced or nested, stop and ask the user to fix manually.
-6. **Always use the `AskUserQuestion` tool for user-facing questions.** Every
+6. **Never touch `~/.ssh/config` or run SSH commands on the user's behalf.**
+   Phase 5 only installs YAML config files; the user wires up authentication
+   themselves. No `ssh-keygen`, no `ssh-copy-id`, no `ssh` smoke tests.
+7. **Always use the `AskUserQuestion` tool for user-facing questions.** Every
    consent prompt, scope choice, conflict resolution, or branch decision goes
    through the built-in `AskUserQuestion` tool with explicit options — never
    write a plain-text question into the chat and wait for a free-form reply.
@@ -205,7 +223,8 @@ its instructions exactly. Pass the parsed flags (`scope`, `audit_only`,
    - Stop after this phase if `audit_only` is true.
 3. **Phase 3 — Install CLAUDE.md**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/03-install-claude-md.md`.
 4. **Phase 4 — Remediate**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/04-remediate.md`.
-5. **Phase 5 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/05-verify.md`.
+5. **Phase 5 — HPC config (optional)**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/05-hpc-config.md`.
+6. **Phase 6 — Verify**: `${CLAUDE_PLUGIN_ROOT}/skills/setup/phases/06-verify.md`.
 
 Each phase ends with a one-line handoff that you echo to the user before
 moving on; don't silently jump phases.

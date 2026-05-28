@@ -72,10 +72,49 @@ When a skill needs to inject plugin content into a user-owned file:
 - **Stop on malformed state.** If the markers are unbalanced or nested, do
   not try to repair. Stop and ask the user.
 
-The canonical content for each marker block lives under `templates/` (e.g.
-`templates/CLAUDE.md.partial`), versioned alongside the rest of the plugin.
-Bump `plugin.json` version whenever a template's content changes — that's the
-signal for installed instances to refresh on next setup run.
+The canonical content for each marker block lives under the owning skill's
+`templates/` directory (e.g. `skills/setup/templates/CLAUDE.md.partial`),
+versioned alongside the rest of the plugin. Bump `plugin.json` version
+whenever a template's content changes — that's the signal for installed
+instances to refresh on next setup run.
+
+## Skill convention: per-resource YAML templates (`skills/<skill>/templates/<name>.yaml`)
+
+For resources that are pure config (not docs), ship a YAML template under the
+owning skill's `templates/` directory and have a phase copy it to a
+user-chosen destination on consent. Pattern conventions:
+
+- **Template content is universal.** No personal infra, no site-specific
+  defaults. Every concrete value is a `<placeholder>` the user fills in.
+- **`template_version` tracks the omr plugin version.** Set the field
+  literally to `{{omr_version}}` in the shipped template; the install
+  phase substitutes the current value from `plugin.json` at install time.
+  This keeps every installed YAML in lockstep with the plugin version
+  that wrote it, so future setup runs can detect drift via a simple
+  version compare. Don't manage a separate per-template version number.
+- **Comments carry the docs.** A YAML block at the bottom (between two
+  `# ---` rulers) serves as quick-reference text — readable in any editor,
+  invisible to parsers.
+- **Scope-aware destination.** Install to `~/.claude/<resource>/<id>.yaml`
+  (global) or `./.omr/<resource>/<id>.yaml` (project-local). Future skills
+  that read these resolve project-local first, then user-global — same
+  precedence as `.env`.
+- **Refresh policy is diff-check.** If the installed file matches the
+  shipped template byte-for-byte, treat as `ALREADY_PRISTINE`. If it
+  differs, AskUserQuestion: keep mine / overwrite / save alongside as
+  `<id>.new.yaml`. One backup per file per day before any overwrite.
+- **Never touch system config.** A YAML template never modifies
+  `~/.ssh/config`, `/etc/hosts`, or anything else outside its own
+  destination tree. The setup phase that installs it also never runs
+  authentication commands (`ssh-keygen`, `ssh-copy-id`, etc.) on the user's
+  behalf.
+
+Current example: `skills/setup/templates/hpc.yaml` (installed by Phase 5 of `omr:setup`).
+
+**Where templates live.** Skill-local (`skills/<skill>/templates/`) when only
+one skill owns the template — the default. Promote to a shared location only
+once a second skill genuinely needs the same template; speculative sharing is
+worse than a clean move later.
 
 ## Plugin layout contract
 
@@ -87,9 +126,11 @@ Oh-My-Research/
 │   └── plugin.json          # ONLY file under .claude-plugin/
 ├── .mcp.json                # MCP server declarations loaded by the plugin
 ├── bin/                     # plugin-internal scripts (e.g. env loader shim)
-├── templates/               # canonical content injected into user files (e.g. CLAUDE.md.partial)
 ├── skills/                  # one folder per skill, each containing SKILL.md
-│   └── <skill-name>/SKILL.md
+│   └── <skill-name>/
+│       ├── SKILL.md
+│       ├── phases/          # for multi-step skills (see "thin router + phases" below)
+│       └── templates/       # canonical content this skill installs into user files
 ├── agents/                  # optional: <name>.md agent definitions
 ├── hooks/                   # optional: hooks.json
 └── commands/                # optional: slash-command markdown files

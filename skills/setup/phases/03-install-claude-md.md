@@ -42,7 +42,7 @@ Decide the target list based on the scope flag passed from SKILL.md:
 
 ### 3.2 Load the template
 
-Read `${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md.partial` into a variable
+Read `${CLAUDE_PLUGIN_ROOT}/skills/setup/templates/CLAUDE.md.partial` into a variable
 `TEMPLATE_BODY`. If the file is missing, the plugin install is broken —
 stop and tell the user to reinstall.
 

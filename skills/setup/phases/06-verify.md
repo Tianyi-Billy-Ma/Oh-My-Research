@@ -1,4 +1,4 @@
-# Phase 5 — Verify
+# Phase 6 — Verify
 
 **Goal:** explain how the user picks up the new state, persist the
 "configured" marker so subsequent runs can short-circuit, and close the loop.
@@ -6,10 +6,10 @@ No probing, no MCP calls — guidance + bookkeeping only.
 
 ## Steps
 
-### 5.1 Reload guidance
+### 6.1 Reload guidance
 
-Tailor the advice to what Phase 3 (CLAUDE.md install) and Phase 4
-(remediation) actually did:
+Tailor the advice to what Phase 3 (CLAUDE.md install), Phase 4
+(remediation), and Phase 5 (HPC config) actually did:
 
 - **`.env` was created or already existed and the user just edited it
   (stdio servers):**
@@ -31,6 +31,11 @@ Tailor the advice to what Phase 3 (CLAUDE.md install) and Phase 4
   every new session. No reload trick exists for the currently-running
   session — restart to pick up.
 
+- **HPC config was written or refreshed (Phase 5):**
+  The YAML file is config-only — nothing runs until the user (or a future
+  omr skill) reads it. Remind the user to open the file and replace the
+  `<...>` placeholders. No restart needed.
+
 - **Audit-only run or nothing changed:**
   Just point at `/mcp` for live status. Don't suggest a restart.
 
@@ -40,7 +45,7 @@ state is partial:
 > Scope `--local` ran — HTTP gaps (if any) and global CLAUDE.md install
 > remain. Rerun `/omr:setup --global` when you're ready.
 
-### 5.2 Persist the configured marker
+### 6.2 Persist the configured marker
 
 **Skip this step entirely if `audit_only` is true** — audit runs are
 read-only by contract.
@@ -64,6 +69,12 @@ Write a JSON blob with these fields:
 - `claudeMdTargets`: list of CLAUDE.md paths Phase 3 actually wrote to
   (empty list if Phase 3 was skipped or all targets were
   `ALREADY_INSTALLED`).
+- `hpcConfigs`: append-only list of HPC config records. Each entry:
+  `{id, dest, templateVersion, installedAt, lastAction}`. Dedupe by
+  `dest` — if a record with the same dest exists, overwrite it. Skip if
+  Phase 5 was opted-out or skipped.
+- `hpcSetupOptOut`: bool, set when the user picks `Never` in Phase 5.
+  Preserve across runs.
 
 Procedure:
 
@@ -79,16 +90,16 @@ Procedure:
 
 The marker is **global** (per Claude Code config dir), not per-project — it
 records that the user has been through this flow at least once. Per-project
-state is encoded by the presence/contents of `./.env` and
-`./.claude/CLAUDE.md` themselves.
+state is encoded by the presence/contents of `./.env`,
+`./.claude/CLAUDE.md`, and `./.omr/hpc/*.yaml` themselves.
 
-### 5.3 Audit-only marker update
+### 6.3 Audit-only marker update
 
 If `audit_only` is true and `.omr-config.json` already exists, update only
 `lastAuditAt` to the current ISO timestamp (preserving every other field).
 If it doesn't exist, do nothing — audit alone isn't enough to claim setup.
 
-### 5.4 Smoke check pointer
+### 6.4 Smoke check pointer
 
 > Run `/mcp` and look for each of the five servers under "Connected". If
 > any show as disconnected after a reload, rerun `/omr:setup --audit` to
@@ -97,23 +108,25 @@ If it doesn't exist, do nothing — audit alone isn't enough to claim setup.
 
 Do **not** call an MCP tool from this skill as a smoke test.
 
-### 5.5 Wrap-up summary
+### 6.5 Wrap-up summary
 
-Print a final block populated from Phase 2, 3, and 4 state:
+Print a final block populated from Phase 2, 3, 4, and 5 state:
 
 ```
 ✓ Reachable now:    exa, tavily, github
 ↻ Pending user:     brave-search (edit ./.env), huggingface (shell export)
 ✗ Unmappable:       (none)
 CLAUDE.md:          ~/.claude/CLAUDE.md (REFRESH v0.6.0 → v0.7.0)
+HPC config:         ~/.claude/hpc/acme-slurm.yaml (CREATE_NEW)
 Scope:              all
 Marker written:     ~/.claude/.omr-config.json
 ```
 
 Empty sections can be elided. The `Marker written` line is omitted on
-audit-only runs.
+audit-only runs. If Phase 5 was skipped or opted-out, render the `HPC
+config` line as `skipped` or `opted out (hpcSetupOptOut: true)`.
 
-### 5.6 Pointer for repeat runs
+### 6.6 Pointer for repeat runs
 
 End with one line:
 
