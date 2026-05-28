@@ -14,6 +14,9 @@ Invoke via `/omr:<name>`:
 - `doctor` — read-only diagnostic. Verifies plugin integrity, MCP wiring,
   CLAUDE.md install state, token presence, HPC config drift, and external
   dependencies. Points at `/omr:setup` for any fix.
+- `literature-review` — build a structured paper corpus + synthesis
+  summary for a research question. Knowledge-base-first (Zotero, local
+  PDFs) then MCP fan-out (Exa/Tavily/Brave/HF/GitHub) then web.
 
 Run `/omr:setup --help` for the current list. New skills land here as the
 plugin grows; the slash-command prefix is always `omr:`.
