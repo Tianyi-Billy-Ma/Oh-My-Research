@@ -13,15 +13,16 @@
 
 ### 4.1 Confirm the post-state
 
-Re-run the read-only comparison from Phase 3.1 and confirm it now reflects the
+Re-run the read-only comparison from Phase 3.1 (`sync_overleaf.py ... status`,
+and `pull --dry` for content-level confirmation) and confirm it now reflects the
 applied action:
 
-- **After a push:** local and Overleaf should agree on the pushed files. For
-  git, `git fetch overleaf && git --no-pager diff --stat HEAD overleaf/master`
-  should show no remaining diff for the pushed paths. For pyoverleaf, re-list
-  remote files and confirm the targeted files match local.
+- **After a push:** re-run `status` (and `pull --dry` for the pushed paths) and
+  confirm the targeted files now match between local and Overleaf — they should
+  no longer appear as `[modified]`/remote-only diffs.
 - **After a pull:** the local files should now match what Overleaf had. Confirm
-  the previously-differing files are reconciled.
+  the previously-differing files are reconciled (`pull --dry` reports "local
+  already matches Overleaf" for them).
 - **After a sync:** confirm both sides agree (or that the only remaining
   differences are ones the user chose to leave).
 - **After dry-run / cancel:** confirm nothing changed — both sides are exactly
@@ -37,14 +38,13 @@ Print a final block populated from Phase 3:
 
 ```
 ✓ sync-overleaf complete
-  action:    push → ARR-26-MemoVQ (git)
-  changed:   3 modified, 1 added, 1 deleted
+  action:    push → ARR-26-MemoVQ (pyoverleaf)
+  changed:   2 pushed
              M sections/intro.tex
-             M main.tex
              A figures/arch.pdf
-             D scratch.tex
   backups:   (none)            # or list any .local.backup.YYYY-MM-DD made in 3.4
-  auth:      ssh_key_path → ~/.ssh/id_ed25519 (value never read)
+  auth:      cookie_path → ~/.config/pyoverleaf/cookies.json (value never read)
+             # or: native browser/keychain login (no cookie file)
 ```
 
 For a cancelled or dry-run run, render `action: dry-run only (nothing applied)`

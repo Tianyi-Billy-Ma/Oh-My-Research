@@ -1,9 +1,10 @@
 # Phase 3 — Sync
 
-**Goal:** perform the requested `push` / `pull` / `sync`. ALWAYS compute and
-show a dry-run diff first, then get explicit `AskUserQuestion` consent before
-mutating either side. Pushing to a shared Overleaf project is risky and hard to
-reverse — treat every push as a gated action. Force-push needs its own consent.
+**Goal:** perform the requested `push` / `pull` / `sync` via
+`scripts/sync_overleaf.py`. ALWAYS compute and show a dry-run diff first, then
+get explicit `AskUserQuestion` consent before mutating either side. Pushing to a
+shared Overleaf project is risky and hard to reverse — treat every push as a
+gated action.
 
 ## Invariants
 
@@ -14,49 +15,59 @@ reverse — treat every push as a gated action. Force-push needs its own consent
   that would overwrite local files each require an explicit `AskUserQuestion`
   consent. A `--dry-run` run stops after showing the diff — no consent prompt,
   no mutation.
-- **Secrets stay behind the pointer.** Wire the credential into the tool per
-  the Phase 2 plan (env var the tool reads, stdin, or `GIT_SSH_COMMAND -i`).
-  Never expand a secret into a command you display or log.
-- **No force without explicit consent.** `git push --force` /
-  `--force-with-lease` requires a separate consent naming the consequence.
+- **Secrets stay behind the pointer.** Pass `--cookies <path>` to the script so
+  pyoverleaf opens the file itself, or omit it for browser login. Never expand a
+  cookie value into a command you display or log.
+- **Push is explicit-paths only.** `sync_overleaf.py push` requires named
+  files; there is no recursive default. Never synthesize a "push everything"
+  invocation.
 
-## Steps
+## Invocation shape
+
+Run `sync_overleaf.py` under the pyoverleaf tool interpreter resolved in Phase 2
+(the `uv tool` / `pipx` env where `pyoverleaf` is importable). The global
+options come from the resolved config:
+
+```bash
+# <PY> = the tool-env python from Phase 2
+# <SCRIPT> = ${CLAUDE_PLUGIN_ROOT}/skills/sync-overleaf/scripts/sync_overleaf.py
+# --cookies is included only when auth_pointer.kind == cookie_path; otherwise omit it
+<PY> <SCRIPT> --project "<project>" --paper-dir "<local_dir>" [--cookies "<path>"] <subcommand> ...
+```
+
+Show the command with the cookie path shown as a label, never its contents.
 
 ### 3.1 Compute the dry-run diff
 
 Produce a human-readable diff of what *would* change, scoped to `direction`:
 
-- **push** — files that differ local→Overleaf: added, modified, deleted on the
-  Overleaf side.
-- **pull** — files that differ Overleaf→local: added, modified, deleted locally.
-- **sync** — both directions, flagging conflicts (a file changed on both sides
-  since the last common state).
+- **push** — files that differ local→Overleaf.
+- **pull** — files that differ Overleaf→local.
+- **sync** — both directions, flagging conflicts (files that differ on both
+  sides).
 
-**git method:**
+Use the script's read-only subcommands to build the picture:
 
 ```bash
-# fetch is read-only; uses the Phase 2 auth wiring (no secret echoed)
-git fetch overleaf
-git --no-pager diff --stat HEAD overleaf/master   # or the project's default branch
+# inventory: local-only / remote-only / both
+<PY> <SCRIPT> --project "<project>" --paper-dir "<local_dir>" [--cookies "<path>"] status
+
+# content-level preview of what a pull WOULD write (never writes under --dry)
+<PY> <SCRIPT> --project "<project>" --paper-dir "<local_dir>" [--cookies "<path>"] pull --dry
 ```
 
-For `push` also show `git --no-pager log --oneline HEAD ^overleaf/master`
-(local commits not yet on Overleaf). For `pull` show the reverse.
-
-**pyoverleaf method:** list remote files and compare against `local_dir`
-(size/mtime/hash). Render an added/modified/deleted table. Use a temp scratch
-area for any downloaded comparison copies; never overwrite `local_dir` during
-the dry-run.
+For a **push**, cross-reference the named target files against `status` output
+to show which are `create` vs `overwrite` on the remote. For a **pull**, the
+`pull --dry` output already lists `[new]` / `[modified]` / `[local-only]`. For a
+**sync**, combine both to surface files that changed on both sides.
 
 Present the diff compactly:
 
 ```
 Dry-run (push → ARR-26-MemoVQ):
-  M  sections/intro.tex      (+12 / -3)
-  M  main.tex                (+1 / -1)
-  A  figures/arch.pdf        (new, 84 KB)
-  D  scratch.tex             (would be removed on Overleaf)
-  3 modified, 1 added, 1 deleted
+  M  sections/intro.tex   (overwrite on remote)
+  A  figures/arch.pdf     (new on remote)
+  2 file(s) to push
 ```
 
 ### 3.2 If `--dry-run`: stop here
@@ -72,13 +83,12 @@ Then go straight to Phase 4 (which will report "no changes applied").
 
 - **sync:** if any file changed on both sides, list the conflicting files and
   ask via `AskUserQuestion` (single-select per the set, or one decision for
-  all): `prefer local` / `prefer Overleaf` / `abort and let me resolve
-  manually`. Do not auto-merge silently. For git, prefer a rebase/merge that
-  surfaces conflict markers over any `-X ours/theirs` shortcut unless the user
-  explicitly picks a side.
-- **pull that overwrites local edits:** if the dry-run shows local files would
-  be overwritten (modified locally but also changed remotely, or simply
-  replaced), call this out explicitly in the consent prompt in 3.4.
+  all): `prefer local (push)` / `prefer Overleaf (pull)` / `abort and let me
+  resolve manually`. Do not auto-merge silently — pyoverleaf does file-level
+  overwrite, so the chosen side wins wholesale for each file.
+- **pull that overwrites local edits:** if `pull --dry` shows local files would
+  be `[modified]` (overwritten), call this out explicitly in the consent prompt
+  in 3.4.
 
 ### 3.4 Consent gate (push, or overwriting pull)
 
@@ -87,9 +97,10 @@ question to match the action and name the irreversible part:
 
 For a **push**:
 
-> Apply this push to Overleaf project `<project>`? This uploads the changes
-> above to the shared project — collaborators will see them and it's not easily
-> reversible.
+> Apply this push to Overleaf project `<project>`? This uploads the files above
+> to the shared project — collaborators will see them, and an overwrite
+> replaces the remote file (Overleaf keeps version history, but it's still a
+> live edit).
 
 Options:
 1. **Yes, push** — apply the changes shown.
@@ -103,49 +114,30 @@ For an **overwriting pull**:
 
 Options:
 1. **Yes, overwrite local** — apply.
-2. **Stash/back up local first** — copy the about-to-be-overwritten files to
-   `<file>.local.backup.YYYY-MM-DD` (or `git stash`), then apply.
+2. **Back up local first** — copy the about-to-be-overwritten files to
+   `<file>.local.backup.YYYY-MM-DD`, then apply.
 3. **No, cancel** — change nothing.
 
-A non-overwriting pull (clean/empty target) may proceed after the dry-run is
-shown, but still announce what you're applying.
+A non-overwriting pull (only `[new]` files, clean target) may proceed after the
+dry-run is shown, but still announce what you're applying.
 
 ### 3.5 Apply
 
-Only after consent, run the mutation, wiring the credential per the Phase 2
-plan (never echoing it):
+Only after consent, run the mutating subcommand, wiring the cookie per the Phase
+2 plan (never echoing it):
 
-- **git push:** `git push overleaf HEAD:master` (or the project branch). Do
-  **not** add `--force`. If a non-fast-forward rejection occurs, do NOT retry
-  with `--force` automatically — go to 3.6.
-- **git pull:** `git pull --ff-only overleaf master` when possible; if a merge
-  is needed and the user chose to proceed, run the merge surfacing conflicts.
-- **pyoverleaf push/pull:** upload/download the diffed files only. Apply
-  deletions only if the diff showed them and the user consented to that diff.
+- **push:** `<PY> <SCRIPT> --project "<project>" --paper-dir "<local_dir>"
+  [--cookies "<path>"] push <file> [<file> ...]` — only the explicitly named,
+  consented files.
+- **pull:** `<PY> <SCRIPT> ... pull -y` (consent already gathered in 3.4; `-y`
+  skips the script's own prompt). If the user chose "back up local first" in
+  3.4, make the `.local.backup.YYYY-MM-DD` copies *before* running the pull.
+- **sync:** apply the user's per-file choice from 3.3 — push the files where
+  local wins, pull the files where Overleaf wins. Drive each side with the
+  matching subcommand above.
 
-Show the command you ran with the secret redacted (e.g. `GIT_SSH_COMMAND='ssh
--i <key>' git push overleaf HEAD:master` — show `<key>` as the path label, never
-key contents; for token remotes show the host, never the token).
-
-### 3.6 Force-push (only on explicit, separate consent)
-
-If a push is rejected as non-fast-forward, do not force automatically. Ask via
-`AskUserQuestion` (single-select):
-
-> The push was rejected because Overleaf has commits your local branch doesn't.
-> A force-push would **overwrite the Overleaf history** with your local version,
-> discarding those remote commits. How do you want to proceed?
-
-Options:
-1. **Pull/rebase first, then push** (recommended, non-destructive) — fetch,
-   rebase local onto `overleaf/master`, resolve any conflicts (3.3), re-attempt
-   a normal push.
-2. **Force-push (overwrite Overleaf)** — only on this explicit choice run
-   `git push --force-with-lease overleaf HEAD:master`. Prefer
-   `--force-with-lease` over `--force`.
-3. **Cancel** — change nothing.
-
-Never reach option 2 without the user selecting it here.
+Show the command you ran with the cookie path shown as a label (e.g.
+`--cookies <cookies.json>`), never its contents.
 
 ## Handoff
 
