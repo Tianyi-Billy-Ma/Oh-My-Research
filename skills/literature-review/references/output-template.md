@@ -1,8 +1,8 @@
 # Output template for `summary.md`
 
 The scaffold lives at `templates/summary.md`. This document defines the
-column conventions, narrative structure, and length budget that Phase 3
-must follow.
+column conventions, narrative structure, and length budget that Phase 4
+(Summarize) must follow.
 
 ## Table
 

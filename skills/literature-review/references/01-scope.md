@@ -1,8 +1,9 @@
 # Phase 1 — Scope
 
-**Goal:** turn the user's intent into a reusable `scope.yaml` that Phases 2
-and 3 consume. Captures the research question, time window, source
-priority, output configuration, and corpus size cap.
+**Goal:** turn the user's intent into a reusable `scope.yaml` that the later
+phases (Search → Screen → Summarize) consume. Captures the research
+question, time window, source priority, output configuration, and corpus
+size cap. Also routes an existing workspace to refresh-in-place vs new slug.
 
 ## Steps
 
@@ -43,16 +44,22 @@ unless `--force` was passed:
 > A workspace already exists at `<path>`. What now?
 
 Options:
-1. **Refresh in place** — re-run Phases 2 and 3 against the same
-   `scope.yaml`. Existing `paper_bank.json` gets new entries appended.
-2. **Pick a new slug** — keep both. Skip back to 1.1 to derive a new
-   slug.
+1. **Refresh (recommended)** — re-run the full flow (Search → Screen →
+   Summarize) against the same `scope.yaml`. `paper_bank.json` is
+   append-only: Search dedups against existing entries by canonical `id`,
+   so new findings are added without losing or duplicating what's there;
+   only genuinely new entries get screened, and `summary.md` is
+   re-rendered. The existing `scope.yaml` is the source of truth; don't
+   re-prompt scoping fields.
+2. **Pick a new slug** — keep both corpora. Skip back to 1.1 to derive a
+   new slug.
 3. **Cancel** — exit without changes.
 
-If `--force` was passed, behave as `Refresh in place` without asking.
+If `--force` was passed, behave as **Refresh** without asking.
 
-If the user picks `Refresh in place`, jump to 1.5 (don't re-prompt for
-scoping fields). The existing `scope.yaml` is the source of truth.
+- **Refresh** → jump to 1.5 (don't re-prompt scoping fields); the existing
+  `scope.yaml` is the source of truth, then continue into Search. Search's
+  append-only dedup (see `02-search.md`) is what makes a refresh safe.
 
 ### 1.3 Collect scoping fields
 
@@ -126,6 +133,17 @@ For refreshed workspaces, just append the line.
 
 ## Handoff
 
+For a fresh workspace or a **Fresh re-run**:
+
 > Phase 1 done — scope captured at `<workspace>/scope.yaml`. Moving to search.
 
-Pass forward to Phase 2: the workspace path and the parsed `scope.yaml`.
+Pass forward to Phase 2 (Search): the workspace path and the parsed
+`scope.yaml`. The flow then continues Search → Screen → Summarize.
+
+For an existing workspace where the user chose **Refresh** (or `--force`),
+the same handoff applies — the flow re-runs Search → Screen → Summarize
+against the existing `scope.yaml`, and Search's append-only dedup keeps the
+corpus intact:
+
+> Existing workspace at `<workspace>` — refreshing (re-search with
+> append-only dedup, screen new entries, re-render summary).

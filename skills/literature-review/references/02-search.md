@@ -30,6 +30,54 @@ Read:
 
 Build a `seen_ids` set from existing entries' `id` field for dedup.
 
+### 2.1a Seed from an existing corpus (`--from-existing`)
+
+If the `--from-existing <value>` flag was parsed at the skill level, import
+its entries **before** any source search. `<value>` is one of:
+
+- **A Zotero collection name** — resolve via `mcp__zotero__zotero_get_collections`,
+  match the name case-insensitively, then pull items with
+  `mcp__zotero__zotero_get_collection_items`. Tag each imported entry with
+  `source: "zotero"` and set `retrieval_query: "from-existing: collection <name>"`.
+  Requires the Zotero MCP to be loaded — if it isn't, halt and tell the
+  user the collection can't be reached.
+- **A path to a `paper_bank.json`** — read the file, validate it against
+  `templates/paper_bank.schema.json`, and import its `papers[]`. This lets
+  a teammate's corpus seed yours. Preserve each entry's original `source`
+  value; append `,from-existing` is **not** done — instead record the
+  provenance in `notes` (e.g. `"imported from <path>"`).
+- **A path to a BibTeX export (`.bib`)** — parse entries. Map BibTeX
+  fields to the schema: `title`→`title`, `author`→`authors[]` (split on
+  ` and `), `year`→`year`, `journal`/`booktitle`→`venue`, `doi`→`id`+`url`
+  (`https://doi.org/<doi>`), `url`→`url` when no DOI, `abstract`→`abstract`.
+  Set `source: "bibtex"` and `retrieval_query: "from-existing: <path>"`.
+  If neither a DOI nor a usable URL is present, the entry fails the `url`
+  rail — drop it and log.
+
+Detection: if `<value>` is an existing file path ending in `.json` treat it
+as a paper_bank import; ending in `.bib` treat it as BibTeX; otherwise treat
+it as a Zotero collection name.
+
+Every imported entry is **normalized and validated exactly like a search
+hit** (see 2.4) — same required fields, same `url` and `authors[]` rails,
+same dedup against `seen_ids`. Set `screening: null` on every import so
+Phase 3 (Screen) evaluates it from scratch; never trust a verdict carried
+in from an external file. Drop and log any import that fails validation:
+
+```json
+{"ts":"<ISO>","phase":"search","action":"import_dropped","origin":"<from-existing value>","title":"<truncated>","reason":"<field>"}
+```
+
+Log the import summary:
+
+```json
+{"ts":"<ISO>","phase":"search","action":"from_existing_import","origin":"<value>","imported":<int>,"dropped":<int>}
+```
+
+After import, continue to 2.2 and run the normal source search unless
+`--sources` was set to an empty/none chain. Imported and freshly-searched
+entries share one corpus and all flow into screening together.
+
 ### 2.2 Validate token presence per requested source
 
 For each source in `scope.yaml.sources`:
@@ -88,6 +136,9 @@ Required fields per `templates/paper_bank.schema.json`:
 Optional but-fill-when-available:
 - `year`, `venue`, `abstract`, `retrieval_query`, `notes`.
 
+Always set `screening: null` on a freshly added entry. Phase 3 (Screen)
+populates the `screening` object; Phase 2 never writes a verdict.
+
 Drop the entry if `id`, `title`, `authors`, or `url` can't be set.
 Log the drop:
 
@@ -131,7 +182,9 @@ Print a one-line summary to the user:
 
 ## Audit-only flow (--audit flag)
 
-If `--audit` was passed at the skill level, skip 2.1–2.5 entirely. Instead:
+If `--audit` was passed at the skill level, **stop after search** — do not
+run Phase 3 (Screen) or Phase 4 (Summarize). Skip 2.1–2.5 entirely.
+Instead:
 
 1. Load `<workspace>/paper_bank.json`.
 2. Validate every entry against the schema. Report violations to stdout
@@ -145,8 +198,9 @@ If `--audit` was passed at the skill level, skip 2.1–2.5 entirely. Instead:
 
 ## Handoff
 
-> Phase 2 done — `<workspace>/paper_bank.json` now has `<n>` entries. Moving to summarize.
+> Phase 2 done — `<workspace>/paper_bank.json` now has `<n>` entries. Moving to screen.
 
-Pass forward to Phase 3: the workspace path and the path to
-`paper_bank.json`. Phase 3 doesn't need scope.yaml's source list — only
-the criteria block.
+Pass forward to Phase 3 (Screen): the workspace path and the path to
+`paper_bank.json`. Phase 3 needs `scope.yaml.criteria` (year window,
+preprint/workshop flags, min_citations) to apply the rubric — not the
+source list.

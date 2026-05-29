@@ -85,16 +85,25 @@
         },
         "screening": {
           "type": ["object", "null"],
-          "description": "Filled by Phase 4 (screening) when added in a follow-up PR. Null in MVP.",
+          "description": "Verdict written by Phase 3 (Screen) per references/screening-rubric.md. Null after search/import and before screening; non-null afterward. Same rubric_version + same fields => same verdict.",
           "required": ["verdict", "reason", "rubric_version"],
           "additionalProperties": false,
           "properties": {
             "verdict": {
               "type": "string",
-              "enum": ["included", "excluded", "review"]
+              "enum": ["included", "excluded", "review"],
+              "description": "included -> enters summary; excluded -> never cited; review -> holding pen, not summarized until promoted."
             },
-            "reason": { "type": "string" },
-            "rubric_version": { "type": "string" }
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Gate-cited justification, e.g. 'Gate C: on-topic; tier: peer-reviewed'. Names the deciding gate(s) and resolved source tier for reproducibility."
+            },
+            "rubric_version": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Rubric logic version (e.g. lr-screen-1), independent of plugin schema_version. A re-run re-screens when this drifts."
+            }
           }
         },
         "notes": {

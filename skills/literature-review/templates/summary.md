@@ -9,7 +9,7 @@ Raw data: `paper_bank.json` in this directory.
 
 ## Landscape
 
-<2–3 sentences naming the 2–4 thematic clusters Phase 3 identified.>
+<2–3 sentences naming the 2–4 thematic clusters Phase 4 (Summarize) identified.>
 
 ### <Cluster 1 name>
 
