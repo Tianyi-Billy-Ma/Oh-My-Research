@@ -7,3 +7,4 @@ node_modules/
 .env.local
 .omc/
 .claude/settings.local.json
+.claude/worktrees/
