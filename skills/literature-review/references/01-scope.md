@@ -85,8 +85,15 @@ For a fresh workspace, ask in **small batches via `AskUserQuestion`** —
   Options: `English only` / `English + Chinese` / `English + others
   (specify)`. Default `[en]`.
 
-Don't ask about `sources` here — Phase 2 reads it from the template
-default unless `--sources` was passed on the command line.
+Don't ask about `sources` here — Phase 2 uses the chain from
+`./.omr/config.yaml` `literature_review.default_sources` (loaded in the
+SKILL-level pre-run check), or the template default if no config exists,
+unless `--sources` was passed on the command line.
+
+When prompting for `default_scope`, `output_languages`, and `max_papers`
+above, **default each answer to the value from `./.omr/config.yaml`'s
+`literature_review:` block** when present, so a configured project doesn't
+re-ask what the user already set. Flags still override.
 
 ### 1.4 Write `scope.yaml`
 

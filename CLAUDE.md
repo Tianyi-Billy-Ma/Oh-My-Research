@@ -127,6 +127,33 @@ one skill owns the template — the default. Promote to a shared location only
 once a second skill genuinely needs the same template; speculative sharing is
 worse than a clean move later.
 
+## Project state under `.omr/`
+
+`.omr/` (gitignored) is the project-local home for everything omr persists.
+Three distinct config layers — keep them separate, don't conflate:
+
+- `.omr/config.yaml` — **project preferences**, tool-written by `omr:setup`
+  Phase 6 from an `AskUserQuestion` interview (not hand-authored, though
+  editable after). Hierarchical: level-1 general keys (`author`,
+  `default_model`), plus namespaced blocks (`overleaf:`, `literature_review:`,
+  `hpc:`). Skills read it for defaults. **Auth fields hold pointers only** (a
+  file path or env-var name), never secret values.
+- `.omr/hpc/<id>.yaml` — **per-cluster HPC configs**, one file each. Always
+  project-local (no `~/.claude/hpc/`). `config.yaml`'s `hpc.default_cluster`
+  names a filename here; join with `hpc.config_dir` for the full path.
+- `.omr/literature/<slug>/` — literature-review corpora (scope.yaml,
+  paper_bank.json, summary.md, log.jsonl).
+
+Versus the **global, tool-managed state** at
+`${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.omr-config.json` (setupCompleted,
+setupVersion, tokensReachableAtSetup, hpcConfigs) — machine-written, never
+hand-edited, records that the user went through setup at least once.
+
+**Config precedence for any skill: command-line flag > `.omr/config.yaml` >
+built-in default.** A skill reads `.omr/config.yaml` if present and degrades
+silently to built-in defaults if absent (running `omr:setup` to create it is
+optional, never a hard gate).
+
 ## Plugin layout contract
 
 Follow the official Claude Code plugin template exactly — the README pins this and the loader depends on it:
