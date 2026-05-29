@@ -1,7 +1,7 @@
 ---
 id: setup
 name: setup
-version: 0.10.1
+version: 0.10.2
 description: |-
   Install, configure, and health-check Oh-My-Research (omr).
 stages: ["setup"]
@@ -29,7 +29,7 @@ resourceFlags:
 # omr:setup
 
 Thin router for the omr install/health-check flow. The detailed steps live in
-`phases/`; this file decides which phases to run, parses flags, handles the
+`references/`; this file decides which phases to run, parses flags, handles the
 "already configured" short-circuit, and enforces cross-phase safety rails.
 
 **When this skill is invoked, immediately execute the workflow below. Do not
