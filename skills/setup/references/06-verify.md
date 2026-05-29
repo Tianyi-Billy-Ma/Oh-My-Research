@@ -117,7 +117,7 @@ Print a final block populated from Phase 2, 3, 4, and 5 state:
 ↻ Pending user:     brave-search (edit ./.env), huggingface (shell export)
 ✗ Unmappable:       (none)
 CLAUDE.md:          ~/.claude/CLAUDE.md (REFRESH v0.6.0 → v0.7.0)
-HPC config:         ~/.claude/hpc/acme-slurm.yaml (CREATE_NEW)
+HPC config:         ./.omr/hpc/acme-slurm.yaml (CREATE_NEW)
 Scope:              all
 Marker written:     ~/.claude/.omr-config.json
 ```

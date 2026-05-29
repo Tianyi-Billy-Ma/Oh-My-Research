@@ -1,7 +1,7 @@
 ---
 id: setup
 name: setup
-version: 0.10.2
+version: 0.10.3
 description: |-
   Install, configure, and health-check Oh-My-Research (omr).
 stages: ["setup"]
@@ -59,8 +59,8 @@ Today's coverage:
   GitHub, Hugging Face) and surface which ones are missing.
 - Scaffold a project-local `.env` from `.env.example` on consent.
 - Optionally drop a per-cluster HPC / remote-server YAML config file (from
-  `skills/setup/templates/hpc.yaml`) into `~/.claude/hpc/<id>.yaml` or
-  `./.omr/hpc/<id>.yaml` so future compute-routing skills know where to
+  `skills/setup/templates/hpc.yaml`) into `./.omr/hpc/<id>.yaml` (always
+  project-local) so future compute-routing skills know where to
   send jobs. The phase never modifies `~/.ssh/config` and never runs SSH
   commands — it's pure config installation.
 - Persist a configured-state marker so repeat runs short-circuit to a quick
@@ -78,8 +78,8 @@ Inspect the user's invocation for flags. Accept any combination unless noted.
 | --- | --- |
 | `--help` | Print the help text below and stop. |
 | `--audit` (alias `--check`) | Read-only: run Phase 1 + Phase 2 only. No file writes. Does not update the config marker. |
-| `--local` | Scope to project-local files: CLAUDE.md install targets `./.claude/CLAUDE.md`; remediation only acts on `.env`; HPC configs land in `./.omr/hpc/`. HTTP gaps and global files are listed but not touched. |
-| `--global` | Scope to user-level files: CLAUDE.md install targets `~/.claude/CLAUDE.md`; remediation only emits shell-export advice; HPC configs land in `~/.claude/hpc/`. The project `.env` is left alone. |
+| `--local` | Scope to project-local files: CLAUDE.md install targets `./.claude/CLAUDE.md`; remediation only acts on `.env`. HTTP gaps and global files are listed but not touched. (HPC configs are always project-local regardless of this flag.) |
+| `--global` | Scope to user-level files: CLAUDE.md install targets `~/.claude/CLAUDE.md`; remediation only emits shell-export advice. The project `.env` is left alone. (HPC configs are always project-local regardless of this flag.) |
 | `--force` | Skip the "already configured" pre-check; rerun the full flow regardless. |
 | (no flags) | Pre-check first; if already configured, offer a quick re-audit; otherwise run the full flow, asking interactively where to install CLAUDE.md. |
 

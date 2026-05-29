@@ -74,19 +74,17 @@ in lockstep with the plugin version it was installed under.
 
 ### 5.4 Resolve destination
 
-Determine the install path based on the scope flag from SKILL.md:
+HPC configs are always project-local. The install path is:
 
-- `scope=global` → `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hpc/<id>.yaml`
-- `scope=local` → `./.omr/hpc/<id>.yaml`
-- `scope=all` (no flag) → ask via `AskUserQuestion`:
+- `./.omr/hpc/<id>.yaml`
 
-  > Where should `<id>.yaml` live?
-  >
-  > 1. **Global** (`~/.claude/hpc/<id>.yaml`) — available to every Claude
-  >    Code session for this user.
-  > 2. **Project** (`./.omr/hpc/<id>.yaml`) — only for this project.
+There is no global (`~/.claude/hpc/`) option — every HPC config lives in the
+project under `./.omr/hpc/`, the same way `./.omr/config.yaml` does. The
+`--global` / `--local` flags do **not** affect this phase; they only scope
+the CLAUDE.md install (Phase 3) and token remediation (Phase 4). Don't ask
+the user where to put the file.
 
-`mkdir -p` the parent directory before any write.
+`mkdir -p ./.omr/hpc` before any write.
 
 ### 5.5 Check existing state
 
@@ -157,8 +155,9 @@ Print a short next-steps block:
 > Next:
 > 1. Open `<destination>` and fill in the `<...>` placeholders.
 > 2. From any shell, verify access with: `ssh <user>@<hostname>`.
-> 3. Future omr skills that need cluster info will read this file
->    automatically (project-local first, then user-global).
+> 3. Future omr skills that need cluster info will read this file from
+>    `./.omr/hpc/`. Set `hpc.default_cluster` in `./.omr/config.yaml` to
+>    make this cluster the project default.
 
 Do **not** run `ssh` from this skill. Interactive 2FA / password prompts
 would block the session.
