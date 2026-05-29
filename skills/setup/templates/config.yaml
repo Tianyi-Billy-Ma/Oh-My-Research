@@ -1,0 +1,49 @@
+# Oh-My-Research project config. Written by /omr:setup (Phase 6) from your
+# AskUserQuestion answers — not hand-authored, though you can edit it after.
+# Lives at ./.omr/config.yaml (project-local). omr skills read this for their
+# defaults; command-line flags always override what's here.
+#
+# SECURITY: this file never stores secret values. Auth fields hold a POINTER
+# only — a file path or an environment-variable name. Never paste a cookie,
+# token, or key value here.
+
+schema_version: {{omr_version}}          # resolved at write time
+
+# --- General (level-1) keys ---------------------------------------------------
+author: <name-or-blank>                  # used for citations / paper metadata
+default_model: <model-or-blank>          # preferred model routing hint for skills
+
+# --- Overleaf integration (consumed by the future sync-overleaf skill) --------
+overleaf:
+  sync_method: <pyoverleaf|git>          # how sync-overleaf talks to Overleaf
+  auth:                                  # POINTER ONLY — path or env var, never the value
+    # pyoverleaf path: the browser session cookie lives in a file or env var
+    cookie_path: <path-or-blank>         # e.g. ~/.config/overleaf/cookie.txt
+    cookie_env: <ENV_VAR-or-blank>       # e.g. OVERLEAF_COOKIE
+    # git path: SSH key file or a token env var for https remotes
+    ssh_key_path: <path-or-blank>        # e.g. ~/.ssh/id_ed25519
+    token_env: <ENV_VAR-or-blank>        # e.g. OVERLEAF_GIT_TOKEN
+  project_names: []                      # Overleaf project name(s), e.g. [ARR-26-MemoVQ]
+
+# --- Literature review defaults (consumed by /omr:literature-review) ----------
+literature_review:
+  default_scope: local                   # local | global
+  output_languages: [en]                 # add zh / ja / etc to emit summary.<lang>.md
+  default_sources: [zotero, local, exa, tavily, brave-search, huggingface, github, web]
+  max_papers: 50
+
+# --- HPC pointer (cluster configs themselves live in ./.omr/hpc/) -------------
+hpc:
+  config_dir: ./.omr/hpc/                # folder holding per-cluster YAML configs
+  default_cluster: <name.yaml-or-blank>  # a filename in config_dir; join the two
+                                         # for the full path, e.g.
+                                         # ./.omr/hpc/ + acme-slurm.yaml
+
+# -----------------------------------------------------------------------------
+# Notes (comments only — not parsed).
+#
+# - Precedence for any skill: command-line flag > this file > built-in default.
+# - Auth pointers: set EITHER a *_path OR a *_env per credential, not the value.
+# - hpc.default_cluster is just the filename; resolve it against hpc.config_dir.
+# - To reconfigure, rerun /omr:setup (it refreshes this file in place).
+# -----------------------------------------------------------------------------

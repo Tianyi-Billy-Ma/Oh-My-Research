@@ -1,7 +1,7 @@
 ---
 id: doctor
 name: doctor
-version: 0.10.2
+version: 0.11.0
 description: |-
   Diagnose Oh-My-Research (omr) installation, configuration, and connectivity issues.
 stages: ["setup"]
@@ -174,13 +174,14 @@ done
 
 ### Step 5 — HPC config drift (optional)
 
-If `~/.claude/hpc/` or `./.omr/hpc/` contains any `*.yaml` files, check
-each against the current plugin version.
+If `./.omr/hpc/` contains any `*.yaml` files, check each against the
+current plugin version. (HPC configs are always project-local — there is
+no `~/.claude/hpc/`.)
 
 ```bash
 PLUGIN_V=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json")
 found_any=0
-for dir in "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hpc" "./.omr/hpc"; do
+for dir in "./.omr/hpc"; do
   [ -d "$dir" ] || continue
   for f in "$dir"/*.yaml; do
     [ -f "$f" ] || continue

@@ -37,7 +37,13 @@ values; use `/omr:setup` to audit.
 
 - Plugin namespace is `omr` (short for Oh-My-Research). The full name lives
   in the description; `omr` is the slash-command prefix everywhere.
-- Project-scoped omr state (if any) lives at `.omr/` (gitignored).
+- Project-scoped omr state lives under `.omr/` (gitignored):
+  `.omr/config.yaml` holds cross-skill defaults (author, Overleaf, literature
+  review, HPC pointer); `.omr/hpc/*.yaml` holds per-cluster configs;
+  `.omr/literature/<slug>/` holds literature-review corpora. **Read
+  `.omr/config.yaml` for project defaults before running an omr skill** —
+  command-line flags override it; it overrides built-in defaults. Auth
+  fields there are pointers (path / env-var name), never secret values.
 - **Always use the `AskUserQuestion` tool for user-facing questions.**
   Consent prompts, scope choices, conflict resolutions, branch decisions —
   every interactive question goes through `AskUserQuestion` with explicit

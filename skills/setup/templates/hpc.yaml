@@ -1,6 +1,7 @@
-# HPC / remote server config. Copy this file to ~/.claude/hpc/<your-id>.yaml
-# (global) or ./.omr/hpc/<your-id>.yaml (project-local). Replace every <...>
-# with a real value; delete lines you don't need.
+# HPC / remote server config. /omr:setup writes this to ./.omr/hpc/<id>.yaml
+# (always project-local). Replace every <...> with a real value; delete
+# lines you don't need. Point at it from ./.omr/config.yaml via
+# hpc.default_cluster: <id>.yaml.
 
 id: <pick-an-id>                           # filename uses this. e.g. acme-slurm, lab-workstation
 template_version: {{omr_version}}          # resolved to the omr plugin version at install time
