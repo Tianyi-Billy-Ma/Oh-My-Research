@@ -3,7 +3,7 @@
 **Goal:** turn the user's intent into a reusable `scope.yaml` that the later
 phases (Search → Screen → Summarize) consume. Captures the research
 question, time window, source priority, output configuration, and corpus
-size cap. Also routes existing workspaces to maintain vs fresh.
+size cap. Also routes an existing workspace to refresh-in-place vs new slug.
 
 ## Steps
 
@@ -44,25 +44,22 @@ unless `--force` was passed:
 > A workspace already exists at `<path>`. What now?
 
 Options:
-1. **Maintain (recommended)** — merge new findings into the existing
-   `paper_bank.json`, screen only the new entries, and refresh
-   `summary.md`. Runs Phase 5 (Maintain), which composes Search → Screen →
-   Summarize with append-only/dedup guardrails. The existing `scope.yaml`
-   is the source of truth; don't re-prompt scoping fields.
-2. **Fresh re-run** — re-run the full flow (Search → Screen → Summarize)
-   against the same `scope.yaml`. Still append-only on `paper_bank.json`,
-   but new entries are screened and the summary fully re-rendered.
-3. **Pick a new slug** — keep both corpora. Skip back to 1.1 to derive a
+1. **Refresh (recommended)** — re-run the full flow (Search → Screen →
+   Summarize) against the same `scope.yaml`. `paper_bank.json` is
+   append-only: Search dedups against existing entries by canonical `id`,
+   so new findings are added without losing or duplicating what's there;
+   only genuinely new entries get screened, and `summary.md` is
+   re-rendered. The existing `scope.yaml` is the source of truth; don't
+   re-prompt scoping fields.
+2. **Pick a new slug** — keep both corpora. Skip back to 1.1 to derive a
    new slug.
-4. **Cancel** — exit without changes.
+3. **Cancel** — exit without changes.
 
-If `--force` was passed, behave as **Maintain** without asking.
+If `--force` was passed, behave as **Refresh** without asking.
 
-- **Maintain** → jump straight to Phase 5 (`05-maintain.md`); skip the
-  rest of Phase 1. Echo the maintain-mode handoff at the bottom of this
-  file.
-- **Fresh re-run** → jump to 1.5 (don't re-prompt scoping fields); the
-  existing `scope.yaml` is the source of truth, then continue into Search.
+- **Refresh** → jump to 1.5 (don't re-prompt scoping fields); the existing
+  `scope.yaml` is the source of truth, then continue into Search. Search's
+  append-only dedup (see `02-search.md`) is what makes a refresh safe.
 
 ### 1.3 Collect scoping fields
 
@@ -143,10 +140,10 @@ For a fresh workspace or a **Fresh re-run**:
 Pass forward to Phase 2 (Search): the workspace path and the parsed
 `scope.yaml`. The flow then continues Search → Screen → Summarize.
 
-For an existing workspace where the user chose **Maintain** (or `--force`):
+For an existing workspace where the user chose **Refresh** (or `--force`),
+the same handoff applies — the flow re-runs Search → Screen → Summarize
+against the existing `scope.yaml`, and Search's append-only dedup keeps the
+corpus intact:
 
-> Existing workspace at `<workspace>` — running maintain (merge new
-> findings, screen new entries, refresh summary).
-
-Pass forward to Phase 5 (Maintain): the workspace path and the existing
-`scope.yaml`.
+> Existing workspace at `<workspace>` — refreshing (re-search with
+> append-only dedup, screen new entries, re-render summary).

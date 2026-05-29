@@ -64,7 +64,7 @@ with its tools listed.
 | --- | --- | --- |
 | `/omr:setup` | `omr-setup` | Install, configure, and health-check omr — CLAUDE.md install, MCP token audit, `.env` scaffolding, optional HPC config. |
 | `/omr:doctor` | `omr-doctor` | Read-only diagnostic: plugin integrity, MCP wiring, CLAUDE.md state, token presence, HPC drift, external deps. Points at `/omr:setup` for fixes. |
-| `/omr:literature-review` | `omr-literature-review` | Search → screen → summarize for a research question. KB-first (Zotero, local PDFs) then MCP fan-out (Exa, Tavily, Brave, HF, GitHub) then web. Reproducible screening rubric; idempotent re-runs via maintain; `--from-existing` seeds from Zotero/BibTeX. |
+| `/omr:literature-review` | `omr-literature-review` | Search → screen → summarize for a research question. KB-first (Zotero, local PDFs) then MCP fan-out (Exa, Tavily, Brave, HF, GitHub) then web. Reproducible screening rubric; re-runs append safely (Search dedups); `--from-existing` seeds from Zotero/BibTeX. |
 
 More skills land here as they're added; all follow the `/omr:<name>`
 convention.

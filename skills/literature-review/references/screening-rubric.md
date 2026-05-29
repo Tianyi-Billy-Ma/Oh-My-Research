@@ -134,6 +134,7 @@ peer-reviewed"`. This is what makes a verdict reproducible and auditable.
 
 `rubric_version` is a string, not the plugin version — it tracks the rubric
 logic independently. Current: `lr-screen-1`. Bump to `lr-screen-2` (etc.)
-whenever any gate's rule, threshold, or ordering changes. Phase 5 (Maintain)
-compares the stored `rubric_version` against this file's value to decide
-whether existing verdicts must be recomputed.
+whenever any gate's rule, threshold, or ordering changes. A re-run over an
+existing workspace compares the corpus's stored `rubric_version` against
+this file's value to decide whether existing verdicts must be recomputed
+(see `03-screen.md` step 3.2).

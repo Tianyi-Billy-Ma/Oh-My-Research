@@ -173,7 +173,7 @@ Open questions surfaced — these feed a future /omr:ideate run.
 
 This is the terminal phase of a fresh run. Echo:
 
-> /omr:literature-review complete. Re-run any time to merge new findings
-> (Phase 5 — Maintain).
+> /omr:literature-review complete. Re-run any time to append new findings —
+> Search dedups against the existing corpus, so a re-run is safe.
 
 …and stop.

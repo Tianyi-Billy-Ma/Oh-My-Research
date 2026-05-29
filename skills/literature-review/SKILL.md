@@ -4,7 +4,7 @@ name: literature-review
 version: 0.12.0
 argument-hint: [topic-or-url-or-arxiv-id]
 description: |-
-  Search, screen, and summarize literature into a structured corpus, with idempotent maintain re-runs.
+  Search, screen, and summarize literature into a structured corpus; re-runs append safely.
 stages: ["survey"]
 tools: ["Bash", "Read", "Write", "Edit", "AskUserQuestion", "WebFetch", "WebSearch"]
 summary: |-
@@ -21,7 +21,7 @@ resourceFlags:
   hasScripts: false
   hasTemplates: true
   hasAssets: false
-  referenceCount: 8
+  referenceCount: 7
   scriptCount: 0
   templateCount: 3
   assetCount: 0
@@ -57,9 +57,9 @@ Coverage:
   `rubric_version`. Same rubric + same corpus ⇒ same verdicts.
 - **Summarize** the *included* papers into a `summary.md` with a table +
   clustered narrative.
-- **Maintain** an existing workspace idempotently: merge new findings
-  (append-only, dedup by id), screen only the new entries, refresh the
-  summary marker block.
+- **Re-run** an existing workspace safely: re-running the flow appends new
+  findings (Search dedups by `id`), screens only the new entries, and
+  re-renders the summary — no corpus loss, no dedicated maintenance step.
 
 Do **not** use it to read a single paper deeply (different shape — that's a
 future `paper-analyzer`-style skill), to verify citations in a draft
@@ -76,7 +76,7 @@ future `paper-analyzer`-style skill), to verify citations in a draft
 | `--scope local\|global` | Where the workspace lives: `local` → `./.omr/literature/<slug>/`; `global` → `~/.claude/literature/<slug>/`. Default `local`. |
 | `--from-existing <value>` | Seed the corpus before searching. `<value>` is a Zotero collection name, OR a path to a `paper_bank.json`, OR a path to a `.bib` export. Imported entries still pass through screening. Wired into Phase 2 (step 2.1a). |
 | `--audit` | Read-only: validate an existing workspace's `paper_bank.json` against the schema, report drift, no search/screen/write. **Stops after search** — never runs screen or summarize. |
-| `--force` | Bypass the "workspace already exists" prompt; behave as **Maintain** (Phase 5) in place. |
+| `--force` | Bypass the "workspace already exists" prompt; refresh in place (re-run Search → Screen → Summarize against the existing `scope.yaml`; Search's append-only dedup keeps the corpus intact). |
 | No flags | Interactive flow: Phase 1 prompts for everything via `AskUserQuestion`, then Phases 2 → 3 → 4 execute (Search → Screen → Summarize). |
 
 The argument (`$ARGUMENTS` / first positional arg) is treated as `--topic`
@@ -112,11 +112,11 @@ FLAGS:
   --max-papers N            cap corpus size (default 50)
   --scope local|global      workspace destination (default local)
   --audit                   read-only validation; stops after search
-  --force                   maintain an existing workspace without prompting
+  --force                   refresh an existing workspace without prompting
 
 FLOW:
   scope -> search -> screen -> summarize       (fresh run)
-  existing workspace -> maintain               (merge new, screen new, refresh)
+  existing workspace -> refresh                (re-run; append-only dedup keeps the corpus)
 
 OUTPUT:
   .omr/literature/<slug>/        (or ~/.claude/literature/<slug>/ with --scope global)
@@ -174,10 +174,10 @@ user.
     normalized and validated like any hit, set `screening: null`, and pass
     through Phase 3 from scratch — never trust a verdict carried in from an
     external file.
-12. **Maintain never silently re-flips settled verdicts.** A maintain
-    re-run screens only new entries unless `rubric_version` changed; a full
-    re-screen that could change existing verdicts is gated behind
-    `AskUserQuestion`.
+12. **A re-run never silently re-flips settled verdicts.** Refreshing an
+    existing workspace screens only the newly added entries unless
+    `rubric_version` changed; a full re-screen that could change existing
+    verdicts is gated behind `AskUserQuestion`.
 
 ## Pre-run check: load project defaults
 
@@ -239,15 +239,14 @@ The non-numbered reference docs are loaded by the phase that needs them:
 
 **Branching:**
 
-- **Fresh workspace / Fresh re-run** → run Phases 1 → 2 → 3 → 4 in order.
-- **Existing workspace + Maintain (or `--force`)** → Phase 1's 1.2 routes
-  to **Phase 5 — Maintain**:
-  `${CLAUDE_PLUGIN_ROOT}/skills/literature-review/references/05-maintain.md`,
-  which composes Search → Screen → Summarize with append-only/dedup
-  guardrails (screen only new entries; refresh the summary block).
-- **`--audit`** → skip Phases 1, 3, 4 and 5; run the read-only audit flow
-  at the bottom of `02-search.md`, which **stops after search** (no screen,
-  no summarize, no write).
+- **Fresh workspace** → run Phases 1 → 2 → 3 → 4 in order.
+- **Existing workspace + Refresh (or `--force`)** → Phase 1's 1.2 sends the
+  run to 1.5 (skip re-prompting scope), then continues Phases 2 → 3 → 4.
+  Search's append-only dedup keeps the corpus intact, only new entries get
+  screened, and the summary is re-rendered. No dedicated maintenance phase.
+- **`--audit`** → skip Phases 1, 3 and 4; run the read-only audit flow at
+  the bottom of `02-search.md`, which **stops after search** (no screen, no
+  summarize, no write).
 
 Each phase ends with a one-line `## Handoff` that you echo to the user
 before moving on.

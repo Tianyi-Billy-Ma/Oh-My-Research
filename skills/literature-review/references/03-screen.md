@@ -48,12 +48,13 @@ If `papers[]` is empty, halt with:
 ### 3.2 Decide which entries to screen
 
 - **Fresh run / full flow:** screen every entry.
-- **Maintain re-run (Phase 5 calls back here):** screen only entries whose
-  `screening` is `null` (newly added), UNLESS the corpus's stored
-  `rubric_version` differs from the rubric file's current
-  `rubric_version` — in that case re-screen **all** entries so the whole
-  corpus is consistent under one rubric version. Phase 5 tells you which
-  mode it wants; default to "newly added only."
+- **Re-run over an existing workspace (refresh):** screen only entries whose
+  `screening` is `null` (newly added this run), UNLESS the corpus's stored
+  `rubric_version` differs from the rubric file's current `rubric_version` —
+  in that case re-screen **all** entries so the whole corpus is consistent
+  under one rubric version (gate this full re-screen behind
+  `AskUserQuestion` since it can change settled verdicts). Default to
+  "newly added only."
 
 ### 3.3 Apply the rubric per entry
 
