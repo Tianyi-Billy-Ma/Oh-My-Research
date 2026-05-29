@@ -1,7 +1,7 @@
 ---
 id: literature-review
 name: literature-review
-version: 0.10.3
+version: 0.11.0
 argument-hint: [topic-or-url-or-arxiv-id]
 description: |-
   Search, screen, and summarize literature into a structured corpus.
@@ -149,6 +149,22 @@ user.
    pretend everything worked.
 8. **`schema_version` tracks the plugin version via `{{omr_version}}`
    substitution at write time** — same convention as `templates/hpc.yaml`.
+
+## Pre-run check: load project defaults
+
+Before Phase 1, read `./.omr/config.yaml` if it exists and load its
+`literature_review:` block as defaults:
+
+- `default_scope` → the `--scope` default (when no `--scope` flag given).
+- `output_languages` → seeds `scope.yaml.output_languages`.
+- `default_sources` → the source chain (when no `--sources` flag given).
+- `max_papers` → the `--max-papers` default.
+
+Precedence is always **command-line flag > `./.omr/config.yaml` > built-in
+default**. If `config.yaml` is absent, fall back to built-in defaults
+silently (no prompt — running `/omr:setup` to create it is optional). The
+`author` general key, if set, may be used for citation attribution in the
+summary.
 
 ## Pre-run check: gate on token presence
 

@@ -1,7 +1,7 @@
 ---
 id: doctor
 name: doctor
-version: 0.10.3
+version: 0.11.0
 description: |-
   Diagnose Oh-My-Research (omr) installation, configuration, and connectivity issues.
 stages: ["setup"]
