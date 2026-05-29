@@ -17,6 +17,9 @@ Invoke via `/omr:<name>`:
 - `literature-review` — build a structured paper corpus + synthesis
   summary for a research question. Knowledge-base-first (Zotero, local
   PDFs) then MCP fan-out (Exa/Tavily/Brave/HF/GitHub) then web.
+- `sync-overleaf` — two-way sync a local paper directory with an Overleaf
+  project (pyoverleaf or git), driven by the `overleaf:` block of
+  `.omr/config.yaml`.
 
 Run `/omr:setup --help` for the current list. New skills land here as the
 plugin grows; the slash-command prefix is always `omr:`.

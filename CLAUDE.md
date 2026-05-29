@@ -53,7 +53,7 @@ Reference shape: `omc-setup` from oh-my-claudecode (theirs uses `phases/`; ours 
 
 For single-pass / read-only / diagnostic skills, **skip the `references/` directory** entirely and keep the whole flow in `SKILL.md`. Reference shape: `omc-doctor` from oh-my-claudecode. Our `doctor` skill follows that pattern — one file, numbered diagnostic steps, no consent prompts (it's read-only), aggregate verdict at the end. Use this shape when the work is bounded, sequential, and doesn't branch on user input.
 
-Both multi-step skills (`setup`, `literature-review`) use `references/`. There is no `phases/` directory anywhere in the plugin — don't introduce one.
+All multi-step skills (`setup`, `literature-review`, `sync-overleaf`) use `references/`. There is no `phases/` directory anywhere in the plugin — don't introduce one.
 
 ## Skill convention: version field tracks plugin version
 
