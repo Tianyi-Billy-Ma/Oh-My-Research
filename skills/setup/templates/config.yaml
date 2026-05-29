@@ -15,15 +15,12 @@ default_model: <model-or-blank>          # preferred model routing hint for skil
 
 # --- Overleaf integration (consumed by the future sync-overleaf skill) --------
 overleaf:
-  sync_method: <pyoverleaf|git>          # how sync-overleaf talks to Overleaf
-  auth:                                  # POINTER ONLY — path or env var, never the value
-    # pyoverleaf path: the browser session cookie lives in a file or env var
-    cookie_path: <path-or-blank>         # e.g. ~/.config/overleaf/cookie.txt
-    cookie_env: <ENV_VAR-or-blank>       # e.g. OVERLEAF_COOKIE
-    # git path: SSH key file or a token env var for https remotes
-    ssh_key_path: <path-or-blank>        # e.g. ~/.ssh/id_ed25519
-    token_env: <ENV_VAR-or-blank>        # e.g. OVERLEAF_GIT_TOKEN
-  project_names: []                      # Overleaf project name(s), e.g. [ARR-26-MemoVQ]
+  sync_method: pyoverleaf                # only pyoverleaf is supported today (git is not yet wired up)
+  auth:                                  # POINTER ONLY — a file path, never the cookie value
+    cookie_path: <path-or-blank>         # JSON cookie dump for headless use; blank = pyoverleaf native browser/keychain login
+  tool_installer: <uv|pipx-or-blank>     # resolved by /omr:sync-overleaf preflight (uv preferred); leave blank to auto-detect
+  local_path: overleaf                   # local root for synced Overleaf projects, relative to repo root
+  project_names: []                      # Overleaf project name(s); each syncs into <local_path>/<project_name>/
 
 # --- Literature review defaults (consumed by /omr:literature-review) ----------
 literature_review:

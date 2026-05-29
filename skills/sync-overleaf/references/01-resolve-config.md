@@ -1,20 +1,24 @@
 # Phase 1 — Resolve config
 
 **Goal:** read the `overleaf:` block of `./.omr/config.yaml`, validate it is
-complete enough to sync, and resolve the three things later phases need: the
-**method**, the **auth pointer** (a file path or env-var name — never the
-value), and the **target project**. If the block is missing or incomplete,
-stop and refer the user to `/omr:setup`.
+complete enough to sync via pyoverleaf, and resolve the things later phases
+need: the **auth pointer** (a cookie file path — never the value, and optional
+since browser login is the fallback), the **target project**, and the
+**direction**. If the block is missing or incomplete, stop and refer the user
+to `/omr:setup`.
 
 ## Invariants
 
-- **Pointer only.** This phase records *where* the secret lives (a path or an
-  env-var name). It never reads the cookie/token/key value. Resolution to the
-  actual value happens in Phase 2, at the moment a tool needs it.
+- **pyoverleaf only.** This skill currently supports only the pyoverleaf
+  transport. If config requests `git`, stop with the message in step 1.2 — the
+  git method is not implemented yet.
+- **Pointer only.** This phase records *where* the cookie lives (a path). It
+  never reads the cookie value. Resolution happens in Phase 2/3, at the moment
+  pyoverleaf needs it.
 - **Config is the source of defaults; flags win.** Precedence is
   command-line flag > `./.omr/config.yaml` > built-in default.
-- **Never inline a secret.** If an `auth.*` field looks like a literal secret
-  (long opaque string, not a path or env-var name), stop per safety rail 5.
+- **Never inline a secret.** If `auth.cookie_path` looks like a literal cookie
+  value (long opaque string, not a path), stop per safety rail 4.
 
 ## Steps
 
@@ -23,65 +27,59 @@ stop and refer the user to `/omr:setup`.
 Look for `./.omr/config.yaml` (project-local). If it does not exist, stop and
 tell the user:
 
-> No `./.omr/config.yaml` found. The Overleaf settings (sync method, auth
-> pointer, project names) live there. Run `/omr:setup` to create it, then
-> rerun `/omr:sync-overleaf`.
+> No `./.omr/config.yaml` found. The Overleaf settings (cookie pointer,
+> project names) live there. Run `/omr:setup` to create it, then rerun
+> `/omr:sync-overleaf`.
 
 Read the file and parse the top-level `overleaf:` block. If the `overleaf:` key
 is absent, or every field under it is still a `<placeholder>`, stop and tell the
 user:
 
 > `./.omr/config.yaml` exists but its `overleaf:` block isn't filled in.
-> Run `/omr:setup` (it interviews you for the sync method, the auth pointer,
-> and your Overleaf project name(s)), then rerun this skill.
+> Run `/omr:setup` (it interviews you for the cookie pointer and your Overleaf
+> project name(s)), then rerun this skill.
 
-Do not attempt to write or repair `config.yaml` from this skill — `/omr:setup`
-owns that file.
+Do not write or repair `config.yaml` from this phase — `/omr:setup` owns that
+file. (Phase 2 may write the single non-secret `overleaf.tool_installer` key;
+nothing else.)
 
-### 1.2 Resolve the method
+### 1.2 Check the sync method (pyoverleaf only)
 
-Determine `method` with this precedence:
+Read `overleaf.sync_method`. Only `pyoverleaf` is supported right now:
 
-1. `--method` flag, if passed.
-2. `overleaf.sync_method` from config (`pyoverleaf` or `git`).
-3. If neither resolves to a valid value, ask via `AskUserQuestion`
-   (single-select): "Which sync method should I use?" → options `pyoverleaf` /
-   `git`.
+- If it is `pyoverleaf` (or unset/blank — treat the default as `pyoverleaf`),
+  continue.
+- If it is `git`, stop and tell the user:
 
-Validate the resolved value is exactly `pyoverleaf` or `git`. Anything else →
-ask via `AskUserQuestion` to pick one.
+  > Your config sets `overleaf.sync_method: git`, but this skill only supports
+  > the `pyoverleaf` method right now — the git transport isn't implemented
+  > yet. Set `overleaf.sync_method: pyoverleaf` via `/omr:setup` (and fill in
+  > a cookie pointer or rely on browser login), then rerun.
+
+- Any other value → treat as invalid and stop with the same guidance,
+  pointing the user to set it to `pyoverleaf`.
 
 ### 1.3 Resolve the auth pointer (record location, not value)
 
-Based on the resolved `method`, pull the relevant pointer fields from
-`overleaf.auth` and record which one is set. **Do not read the file contents or
-the env var value here** — just note the pointer.
+Pull `overleaf.auth.cookie_path` and record it. **Do not read the file
+contents here** — just note the pointer.
 
-- **pyoverleaf** needs one of:
-  - `cookie_path` — a file holding the session cookie, or
-  - `cookie_env` — the name of an env var holding it.
-- **git** needs one of:
-  - `ssh_key_path` — an SSH private-key file (for SSH remotes), or
-  - `token_env` — the name of an env var holding an HTTPS token.
+Build an `auth_pointer` record:
+`{kind: cookie_path, value: <the path as written in config>}` when set, or
+`null` when `cookie_path` is blank/placeholder.
 
-Build an `auth_pointer` record: `{kind: cookie_path|cookie_env|ssh_key_path|
-token_env, value: <the path or env-var name as written in config>}`.
+A `null` pointer is **not** an error: with no cookie file, `sync_overleaf.py`
+falls back to pyoverleaf's native browser/keychain login in Phase 3. Pass
+`auth_pointer: null` forward and let Phase 2 note the browser-login plan.
 
-If **both** valid pointers for the method are set, prefer the file-path form
-for git (`ssh_key_path`) / leave it to the user for pyoverleaf by asking via
-`AskUserQuestion` which to use. If **neither** is set for the chosen method,
-do not stop yet — pass `auth_pointer: null` forward; Phase 2 produces the
-actionable "pointer resolves to nothing" guidance with the exact field to fill.
+**Sanity check (safety rail 4):** if `cookie_path`'s written value looks like a
+literal cookie value rather than a path (e.g. it contains `=`, spaces, or a long
+base64/hex blob, and is not a plausible filesystem path), stop and tell the user:
 
-**Sanity check (safety rail 5):** if the pointer field's written value looks
-like a literal secret rather than a path or an env-var name (e.g. it contains
-`=`, spaces, or a long base64/hex blob, and is not an existing path or a plausible
-`UPPER_SNAKE_CASE` env-var name), stop and tell the user:
-
-> The `overleaf.auth.<field>` value in `config.yaml` looks like a secret value,
-> not a pointer. Move the actual cookie/token/key out of the file and store
-> only a path or env-var name there (rerun `/omr:setup` to fix it). I won't
-> proceed with an inlined secret.
+> The `overleaf.auth.cookie_path` value in `config.yaml` looks like a cookie
+> value, not a path. Move the actual cookie out of the file and store only a
+> file path there (rerun `/omr:setup` to fix it). I won't proceed with an
+> inlined secret.
 
 ### 1.4 Resolve the target project
 
@@ -89,6 +87,8 @@ like a literal secret rather than a path or an env-var name (e.g. it contains
 
 1. `--project <name>` flag, if passed — validate it appears in
    `project_names`; if not, ask via `AskUserQuestion` to pick from the list.
+   (A 24-hex id passed via `--project` is also valid and goes straight through
+   to the script.)
 2. If `project_names` has exactly one entry, use it.
 3. If `project_names` has more than one entry and no `--project` flag, ask via
    `AskUserQuestion` (single-select): "Which Overleaf project should I sync?"
@@ -99,7 +99,29 @@ like a literal secret rather than a path or an env-var name (e.g. it contains
    > `overleaf.project_names` is empty in `config.yaml`. Add your Overleaf
    > project name(s) via `/omr:setup`, then rerun.
 
-### 1.5 Resolve the direction
+### 1.5 Resolve the local paper directory
+
+A repo may track several Overleaf projects (different papers), so each
+project syncs into its **own subfolder** under a shared local root:
+
+```
+paper_dir = <overleaf.local_path> / <project>
+```
+
+- `overleaf.local_path` defaults to `overleaf` (relative to the repo root)
+  when blank or unset. So project `ARR-26-MemoVQ` → `./overleaf/ARR-26-MemoVQ/`,
+  and a second project `AMLC-26-MemoVQ` → `./overleaf/AMLC-26-MemoVQ/`.
+- A `--paper-dir <path>` flag, if passed, overrides this computed path
+  wholesale (precedence: flag > computed-from-config).
+- When `project` was given as a 24-hex id (not a name), there's no clean
+  subfolder name — use the id as the subfolder, or ask via `AskUserQuestion`
+  for a folder name to use under `local_path`.
+
+Create the directory (`mkdir -p`) only when a `pull`/`sync` will write into
+it; for `push`/`status` it must already exist (if it doesn't, stop and tell
+the user to pull first or check `local_path`).
+
+### 1.6 Resolve the direction
 
 Resolve `direction` with this precedence:
 
@@ -110,23 +132,25 @@ Resolve `direction` with this precedence:
    `push (local → Overleaf)` / `pull (Overleaf → local)` /
    `sync (reconcile both)`.
 
-### 1.6 Emit a no-secret summary
+### 1.7 Emit a no-secret summary
 
 Print what was resolved, **with the pointer shown as a location, never a
 value**:
 
 ```
 Resolved Overleaf sync config:
-  method:       git
+  method:       pyoverleaf
   project:      ARR-26-MemoVQ
+  local path:   ./overleaf/ARR-26-MemoVQ
   direction:    push
-  auth pointer: ssh_key_path → ~/.ssh/id_ed25519   (value not read)
+  auth pointer: cookie_path → ~/.config/pyoverleaf/cookies.json   (value not read)
+                # or: (none) → native browser/keychain login
   dry-run:      false
 ```
 
 ## Handoff
 
-Hand `method`, `project`, `direction`, `auth_pointer`, and `dry_run` to Phase 2.
-Echo one line:
+Hand `project`, `paper_dir`, `direction`, `auth_pointer`, and `dry_run` to
+Phase 2. Echo one line:
 
-> Phase 1 done — config resolved (method=`<method>`, project=`<project>`, direction=`<direction>`). Moving to preflight.
+> Phase 1 done — config resolved (method=`pyoverleaf`, project=`<project>`, local=`<paper_dir>`, direction=`<direction>`). Moving to preflight.
