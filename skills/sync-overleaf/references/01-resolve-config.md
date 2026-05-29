@@ -99,7 +99,29 @@ base64/hex blob, and is not a plausible filesystem path), stop and tell the user
    > `overleaf.project_names` is empty in `config.yaml`. Add your Overleaf
    > project name(s) via `/omr:setup`, then rerun.
 
-### 1.5 Resolve the direction
+### 1.5 Resolve the local paper directory
+
+A repo may track several Overleaf projects (different papers), so each
+project syncs into its **own subfolder** under a shared local root:
+
+```
+paper_dir = <overleaf.local_path> / <project>
+```
+
+- `overleaf.local_path` defaults to `overleaf` (relative to the repo root)
+  when blank or unset. So project `ARR-26-MemoVQ` → `./overleaf/ARR-26-MemoVQ/`,
+  and a second project `AMLC-26-MemoVQ` → `./overleaf/AMLC-26-MemoVQ/`.
+- A `--paper-dir <path>` flag, if passed, overrides this computed path
+  wholesale (precedence: flag > computed-from-config).
+- When `project` was given as a 24-hex id (not a name), there's no clean
+  subfolder name — use the id as the subfolder, or ask via `AskUserQuestion`
+  for a folder name to use under `local_path`.
+
+Create the directory (`mkdir -p`) only when a `pull`/`sync` will write into
+it; for `push`/`status` it must already exist (if it doesn't, stop and tell
+the user to pull first or check `local_path`).
+
+### 1.6 Resolve the direction
 
 Resolve `direction` with this precedence:
 
@@ -110,7 +132,7 @@ Resolve `direction` with this precedence:
    `push (local → Overleaf)` / `pull (Overleaf → local)` /
    `sync (reconcile both)`.
 
-### 1.6 Emit a no-secret summary
+### 1.7 Emit a no-secret summary
 
 Print what was resolved, **with the pointer shown as a location, never a
 value**:
@@ -119,6 +141,7 @@ value**:
 Resolved Overleaf sync config:
   method:       pyoverleaf
   project:      ARR-26-MemoVQ
+  local path:   ./overleaf/ARR-26-MemoVQ
   direction:    push
   auth pointer: cookie_path → ~/.config/pyoverleaf/cookies.json   (value not read)
                 # or: (none) → native browser/keychain login
@@ -127,7 +150,7 @@ Resolved Overleaf sync config:
 
 ## Handoff
 
-Hand `project`, `direction`, `auth_pointer`, and `dry_run` to Phase 2. Echo one
-line:
+Hand `project`, `paper_dir`, `direction`, `auth_pointer`, and `dry_run` to
+Phase 2. Echo one line:
 
-> Phase 1 done — config resolved (method=`pyoverleaf`, project=`<project>`, direction=`<direction>`). Moving to preflight.
+> Phase 1 done — config resolved (method=`pyoverleaf`, project=`<project>`, local=`<paper_dir>`, direction=`<direction>`). Moving to preflight.

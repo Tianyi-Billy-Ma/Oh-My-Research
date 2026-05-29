@@ -48,40 +48,49 @@ Ask in one `AskUserQuestion` round (2 questions):
 
 ### 6.3 Overleaf integration
 
-This config feeds the future `sync-overleaf` skill; gather it now so it's
-ready.
+This config feeds the `/omr:sync-overleaf` skill. Only the **pyoverleaf**
+sync method is supported today (git is not yet wired up), so `sync_method`
+stays `pyoverleaf`.
 
-**Round 1 — sync method.** `AskUserQuestion`:
+**Round 1 — configure Overleaf now?** `AskUserQuestion`:
 
-> How should omr sync with Overleaf?
+> Configure Overleaf sync for this project?
 
-1. **pyoverleaf** (browser-cookie based)
-2. **git** (Overleaf git remote)
-3. **Skip Overleaf for now** — leave the block with placeholders.
+1. **Yes** — collect the fields below.
+2. **Skip for now** — leave the `overleaf:` block at its template defaults
+   (the user can rerun `/omr:setup` or edit `config.yaml` later). Move to 6.4.
 
-If skipped, leave the `overleaf:` block's `<placeholders>` intact and move to
-6.4.
+**Round 2 — auth pointer.** pyoverleaf authenticates from the logged-in
+browser by default (no config needed). Only ask if the user wants the
+headless cookie-file mode. `AskUserQuestion`:
 
-**Round 2 — auth pointer (depends on method).** Remind the user this is a
-pointer, not the value.
+> How should pyoverleaf authenticate?
 
-- If `pyoverleaf`: ask whether the cookie lives in a **file** or an **env
-  var**, then collect the path or the var name into `cookie_path` /
-  `cookie_env`. Leave the git fields blank.
-- If `git`: ask whether auth is via **SSH key** (collect `ssh_key_path`) or a
-  **token env var** (collect `token_env`). Leave the pyoverleaf fields blank.
+1. **Native browser/keychain (default)** — leave `auth.cookie_path` blank;
+   pyoverleaf reads the cookie from your logged-in browser at run time.
+2. **Cookie file (headless)** — collect a file path into `auth.cookie_path`.
 
-Never store the cookie/token/key value itself. If the user offers the value,
-respond:
+If the user picks the file mode, store the **path** only — never the cookie
+value. If they paste a cookie value, respond:
 
-> Keep the value out of `config.yaml` — give me the file path or the env-var
-> name that holds it instead.
+> Keep the value out of `config.yaml` — give me the path to the JSON cookie
+> file that holds it instead.
 
-**Round 3 — project names.** `AskUserQuestion` (free-form, possibly multiple):
+Leave `tool_installer` blank; `/omr:sync-overleaf` resolves it (uv preferred,
+pipx fallback) on first run.
+
+**Round 3 — local path + project names.** `AskUserQuestion` (free-form):
+
+> Where should synced Overleaf projects live (relative to the repo root)?
+> [default: `overleaf`]
+
+Write it to `local_path` (default `overleaf` if the user accepts).
 
 > Overleaf project name(s) for this repo? (comma-separated if more than one)
 
-Write them as a YAML list under `project_names`.
+Write them as a YAML list under `project_names`. Each project syncs into
+`<local_path>/<project_name>/`, so a repo with several papers keeps them in
+separate subfolders (e.g. `overleaf/ARR-26-MemoVQ/`, `overleaf/AMLC-26-MemoVQ/`).
 
 ### 6.4 Literature-review defaults
 
