@@ -24,7 +24,6 @@ overleaf:
 
 # --- Literature review defaults (consumed by /omr:literature-review) ----------
 literature_review:
-  default_scope: local                   # local | global
   output_languages: [en]                 # add zh / ja / etc to emit summary.<lang>.md
   default_sources: [zotero, local, exa, tavily, brave-search, huggingface, github, web]
   max_papers: 50

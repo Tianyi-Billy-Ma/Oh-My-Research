@@ -26,15 +26,17 @@ If `--topic` is missing AND no positional arg, ask via `AskUserQuestion`:
 (Free-form expected; the user types the question, then we generate the
 slug ourselves and confirm.)
 
-Workspace path from the `--scope` flag:
-- `scope=local` → `./.omr/literature/<slug>/`
-- `scope=global` → `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/literature/<slug>/`
-- No flag → ask via `AskUserQuestion`:
+A literature review is always **project-rooted** — there is no
+local/global choice. It produces two directories, splitting machine state
+from the human-readable deliverable:
 
-  > Where should the literature workspace live?
-  >
-  > 1. **Local** (`./.omr/literature/<slug>/`) — per-project (recommended for project-specific reviews).
-  > 2. **Global** (`~/.claude/literature/<slug>/`) — per-user (recommended for evergreen topics).
+| Path | Holds | Tracking |
+| --- | --- | --- |
+| `<workspace>` = `./.omr/literature/<slug>/` | `scope.yaml`, `paper_bank.json`, `log.jsonl` | gitignored (machine state) |
+| `<docs_dir>` = `./docs/literature/<slug>/` | `summary.md` (+ language variants) | committed (human deliverable) |
+
+Throughout the rest of this skill, `<workspace>` is the data dir and
+`<docs_dir>` is the deliverable dir. Don't prompt the user about location.
 
 ### 1.2 Check existing workspace
 
@@ -97,10 +99,10 @@ Don't ask about `sources` here — Phase 2 uses the chain from
 SKILL-level pre-run check), or the template default if no config exists,
 unless `--sources` was passed on the command line.
 
-When prompting for `default_scope`, `output_languages`, and `max_papers`
-above, **default each answer to the value from `./.omr/config.yaml`'s
-`literature_review:` block** when present, so a configured project doesn't
-re-ask what the user already set. Flags still override.
+When prompting for `output_languages` and `max_papers` above, **default
+each answer to the value from `./.omr/config.yaml`'s `literature_review:`
+block** when present, so a configured project doesn't re-ask what the user
+already set. Flags still override.
 
 ### 1.4 Write `scope.yaml`
 
@@ -126,7 +128,7 @@ Create an empty `<workspace>/log.jsonl` if it doesn't exist. Append one
 line for this run:
 
 ```json
-{"ts":"<ISO-8601>","phase":"scope","action":"workspace_initialized","slug":"<slug>","scope":"<local|global>"}
+{"ts":"<ISO-8601>","phase":"scope","action":"workspace_initialized","slug":"<slug>"}
 ```
 
 For refreshed workspaces, just append the line.
