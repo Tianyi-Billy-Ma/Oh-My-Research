@@ -69,7 +69,6 @@ upstream:
   repo: mattpocock/skills
   path: skills/productivity/grill-me
   url: https://github.com/.../SKILL.md
-  note: what we changed (e.g. "research-flavored adaptation")
 ```
 
 This credits the original author and lets a future contributor diff against upstream. Current example: `skills/grill-me/` (adapted from mattpocock's grill-me).

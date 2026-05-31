@@ -20,7 +20,6 @@ upstream:
   repo: mattpocock/skills
   path: skills/productivity/grill-me
   url: https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md
-  note: research-flavored adaptation — corpus-aware grilling + AskUserQuestion-driven
 resourceFlags:
   hasReferences: false
   hasScripts: false
