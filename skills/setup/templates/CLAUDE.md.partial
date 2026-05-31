@@ -18,8 +18,11 @@ Invoke via `/omr:<name>`:
   summary for a research question. Knowledge-base-first (Zotero, local
   PDFs) then MCP fan-out (Exa/Tavily/Brave/HF/GitHub) then web.
 - `sync-overleaf` — two-way sync a local paper directory with an Overleaf
-  project (pyoverleaf or git), driven by the `overleaf:` block of
+  project (pyoverleaf), driven by the `overleaf:` block of
   `.omr/config.yaml`.
+- `grill-me` — relentlessly stress-test a research idea, hypothesis, or
+  plan against your literature corpus and a reviewer rubric before you
+  commit to it. Pairs with `literature-review` (corpus) and `ideate`/`plan`.
 
 Run `/omr:setup --help` for the current list. New skills land here as the
 plugin grows; the slash-command prefix is always `omr:`.
