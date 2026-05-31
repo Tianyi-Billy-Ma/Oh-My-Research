@@ -59,6 +59,21 @@ All multi-step skills (`setup`, `literature-review`, `sync-overleaf`) use `refer
 
 The `version:` field in each SKILL.md frontmatter MUST equal the current `plugin.json` version. When you ship a release, bump `plugin.json` and every SKILL.md `version:` field in the same commit. Reason: users seeing `setup v0.8.3` while the plugin is `v0.9.0` is confusing and almost always wrong — the lockstep convention removes that footgun. If a skill genuinely didn't change in a release, the version bump is a no-op for that file, which is fine.
 
+## Skill convention: `source` + `upstream` credit external origins
+
+`source: builtin` means the skill was authored from scratch for omr. If a skill is **ported or adapted from another repo**, do NOT mark it `builtin` — set `source` to the upstream repo (e.g. `source: mattpocock/skills`) and add an `upstream:` block recording provenance:
+
+```yaml
+source: mattpocock/skills
+upstream:
+  repo: mattpocock/skills
+  path: skills/productivity/grill-me
+  url: https://github.com/.../SKILL.md
+  note: what we changed (e.g. "research-flavored adaptation")
+```
+
+This credits the original author and lets a future contributor diff against upstream. Current example: `skills/grill-me/` (adapted from mattpocock's grill-me).
+
 ## Skill convention: ask the user, don't prompt-and-wait
 
 Every user-facing question that a skill asks — consent prompts, scope choices, conflict resolutions, branch decisions — MUST go through the built-in `AskUserQuestion` tool with explicit options. Never write a plain-text question into the chat and wait for a free-form reply.

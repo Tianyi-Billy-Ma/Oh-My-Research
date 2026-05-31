@@ -14,8 +14,13 @@ intents: ["research", "evaluation"]
 capabilities: ["evaluation-benchmarking", "research-planning"]
 domains: ["general"]
 keywords: ["omr-grill-me", "omr:grill-me", "grill me", "grill my idea", "stress-test my plan", "poke holes in my idea", "play devil's advocate", "mock defense", "defend my research", "challenge my hypothesis", "reviewer grilling", "red-team my plan"]
-source: builtin
+source: mattpocock/skills
 status: experimental
+upstream:
+  repo: mattpocock/skills
+  path: skills/productivity/grill-me
+  url: https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md
+  note: research-flavored adaptation — corpus-aware grilling + AskUserQuestion-driven
 resourceFlags:
   hasReferences: false
   hasScripts: false
