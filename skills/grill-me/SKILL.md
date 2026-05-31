@@ -208,7 +208,8 @@ Verdict: <ready to plan / needs more evidence / reconsider>  (with one-line reas
 If the verdict is "ready to plan," point at `/omr:plan`. If "needs more
 evidence," point at `/omr:literature-review` (to fill the specific gap) or
 a small probe experiment. Offer (via `AskUserQuestion`) to save this block
-to `./.omr/grill/<slug>.md` — only write it if the user says yes.
+to `./docs/grill/<slug>.md` (a human-readable, committable deliverable —
+not `.omr/`, which is machine state) — only write it if the user says yes.
 
 ## Out of scope
 
