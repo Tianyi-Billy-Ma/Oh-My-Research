@@ -131,12 +131,21 @@ Resolve `{{omr_version}}` to the current plugin version (same pattern as
 
 ### 4.7 Write `summary.md` per output language
 
+The summary is the **human-readable deliverable**, so it goes in
+`<docs_dir>` (the committable `./docs/literature/<slug>/`) — NOT in the
+gitignored `<workspace>`. `mkdir -p <docs_dir>` first.
+
 For each language in `scope.yaml.output_languages`:
 
-- `en` → `<workspace>/summary.md`.
-- `<other>` (e.g. `zh`, `ja`) → `<workspace>/summary.<lang>.md`. Translate
+- `en` → `<docs_dir>/summary.md`.
+- `<other>` (e.g. `zh`, `ja`) → `<docs_dir>/summary.<lang>.md`. Translate
   the rendered content; keep URLs, titles, and paper IDs as-is. Don't
   invent new analysis in translation.
+
+The corpus (`paper_bank.json`) stays in `<workspace>` (`.omr/`). When the
+summary needs to point a reader at the raw data, reference it by its
+relative path from `<docs_dir>` —
+`../../../.omr/literature/<slug>/paper_bank.json`.
 
 If the file already exists (refresh run):
 - Marker block present → replace its contents in place. Preserve
