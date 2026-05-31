@@ -141,22 +141,39 @@ one skill owns the template — the default. Promote to a shared location only
 once a second skill genuinely needs the same template; speculative sharing is
 worse than a clean move later.
 
-## Project state under `.omr/`
+## Project layout: machine state vs human deliverables vs Overleaf
 
-`.omr/` (gitignored) is the project-local home for everything omr persists.
-Three distinct config layers — keep them separate, don't conflate:
+Three project-rooted trees, split by audience. **The rule: if a human reads
+it as an output, it goes in `docs/` (committed); if the tooling manages it
+as state/data/logs, it goes in `.omr/` (gitignored); Overleaf mirrors go in
+`overleaf/`.** Every skill that produces output MUST follow this split — a
+readable deliverable never lives in `.omr/`.
+
+**`.omr/` — machine state (gitignored).** Tool-managed config, data, logs:
 
 - `.omr/config.yaml` — **project preferences**, tool-written by `omr:setup`
-  Phase 6 from an `AskUserQuestion` interview (not hand-authored, though
-  editable after). Hierarchical: level-1 general keys (`author`,
-  `default_model`), plus namespaced blocks (`overleaf:`, `literature_review:`,
-  `hpc:`). Skills read it for defaults. **Auth fields hold pointers only** (a
-  file path or env-var name), never secret values.
+  Phase 6 from an `AskUserQuestion` interview (editable after). Hierarchical:
+  level-1 general keys (`author`, `default_model`), plus namespaced blocks
+  (`overleaf:`, `literature_review:`, `hpc:`). Skills read it for defaults.
+  **Auth fields hold pointers only** (a file path or env-var name), never
+  secret values.
 - `.omr/hpc/<id>.yaml` — **per-cluster HPC configs**, one file each. Always
   project-local (no `~/.claude/hpc/`). `config.yaml`'s `hpc.default_cluster`
   names a filename here; join with `hpc.config_dir` for the full path.
-- `.omr/literature/<slug>/` — literature-review corpora (scope.yaml,
-  paper_bank.json, summary.md, log.jsonl).
+- `.omr/literature/<slug>/` — literature-review machine state (`scope.yaml`,
+  `paper_bank.json`, `log.jsonl`).
+
+**`docs/` — human deliverables (committed).** The artifacts a person reads
+and version-controls:
+
+- `docs/literature/<slug>/summary.md` (+ `summary.<lang>.md`) — the
+  literature review write-up.
+- `docs/grill/<slug>.md` — `omr:grill-me` verdicts.
+- Future stages (ideas, plans, drafts) land here too.
+
+**`overleaf/<project>/` — Overleaf project mirrors**, synced by
+`omr:sync-overleaf` (configurable via `overleaf.local_path`, default
+`overleaf`).
 
 Versus the **global, tool-managed state** at
 `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.omr-config.json` (setupCompleted,

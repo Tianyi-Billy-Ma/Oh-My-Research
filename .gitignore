@@ -6,5 +6,6 @@ node_modules/
 .env
 .env.local
 .omc/
+.omr/
 .claude/settings.local.json
 .claude/worktrees/

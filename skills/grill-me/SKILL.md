@@ -1,7 +1,7 @@
 ---
 id: grill-me
 name: grill-me
-version: 0.15.0
+version: 0.16.0
 argument-hint: [idea-or-plan-or-paper-path]
 description: |-
   Relentlessly stress-test a research idea, hypothesis, or plan against your literature corpus and a reviewer rubric before you commit to it.
@@ -208,7 +208,8 @@ Verdict: <ready to plan / needs more evidence / reconsider>  (with one-line reas
 If the verdict is "ready to plan," point at `/omr:plan`. If "needs more
 evidence," point at `/omr:literature-review` (to fill the specific gap) or
 a small probe experiment. Offer (via `AskUserQuestion`) to save this block
-to `./.omr/grill/<slug>.md` — only write it if the user says yes.
+to `./docs/grill/<slug>.md` (a human-readable, committable deliverable —
+not `.omr/`, which is machine state) — only write it if the user says yes.
 
 ## Out of scope
 

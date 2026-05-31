@@ -96,7 +96,6 @@ separate subfolders (e.g. `overleaf/ARR-26-MemoVQ/`, `overleaf/AMLC-26-MemoVQ/`)
 
 Ask in `AskUserQuestion` rounds (2–3 questions each):
 
-- `default_scope`: `local` / `global`.
 - `output_languages`: `English only` / `English + Chinese` / `English + others
   (specify)`. Store as a list.
 - `max_papers`: integer, default 50.

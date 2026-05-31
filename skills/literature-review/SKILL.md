@@ -1,14 +1,14 @@
 ---
 id: literature-review
 name: literature-review
-version: 0.15.0
+version: 0.16.0
 argument-hint: [topic-or-url-or-arxiv-id]
 description: |-
   Search, screen, and summarize literature into a structured corpus; re-runs append safely.
 stages: ["survey"]
 tools: ["Bash", "Read", "Write", "Edit", "AskUserQuestion", "WebFetch", "WebSearch"]
 summary: |-
-  Build a structured paper_bank.json corpus and a synthesis summary for a research topic. Knowledge-base-first (Zotero, local PDFs) then MCP fan-out (Exa, Tavily, Brave, HF, GitHub) then web. Workspace lands under .omr/literature/<slug>/ (project) or ~/.claude/literature/<slug>/ (global).
+  Build a structured paper_bank.json corpus and a synthesis summary for a research topic. Knowledge-base-first (Zotero, local PDFs) then MCP fan-out (Exa, Tavily, Brave, HF, GitHub) then web. Corpus data lands in .omr/literature/<slug>/ (gitignored); the readable summary lands in docs/literature/<slug>/ (committed).
 primaryIntent: research
 intents: ["research"]
 capabilities: ["search-retrieval", "synthesis"]
@@ -73,7 +73,6 @@ future `paper-analyzer`-style skill), to verify citations in a draft
 | `--topic "<q>"` | Non-interactive scoping: skip Phase 1's interactive prompts and pass `<q>` straight into `scope.yaml.research_question`. Defaults are used for everything else. |
 | `--sources: a,b,c` | Override the default source chain. Comma-separated. See `references/source-priority.md` for valid IDs. |
 | `--max-papers N` | Cap the corpus size at `N` (default 50). |
-| `--scope local\|global` | Where the workspace lives: `local` → `./.omr/literature/<slug>/`; `global` → `~/.claude/literature/<slug>/`. Default `local`. |
 | `--from-existing <value>` | Seed the corpus before searching. `<value>` is a Zotero collection name, OR a path to a `paper_bank.json`, OR a path to a `.bib` export. Imported entries still pass through screening. Wired into Phase 2 (step 2.1a). |
 | `--audit` | Read-only: validate an existing workspace's `paper_bank.json` against the schema, report drift, no search/screen/write. **Stops after search** — never runs screen or summarize. |
 | `--force` | Bypass the "workspace already exists" prompt; refresh in place (re-run Search → Screen → Summarize against the existing `scope.yaml`; Search's append-only dedup keeps the corpus intact). |
@@ -110,7 +109,6 @@ FLAGS:
   --from-existing <value>   seed corpus from a Zotero collection name, a
                             paper_bank.json path, or a .bib export (then screen)
   --max-papers N            cap corpus size (default 50)
-  --scope local|global      workspace destination (default local)
   --audit                   read-only validation; stops after search
   --force                   refresh an existing workspace without prompting
 
@@ -118,14 +116,15 @@ FLOW:
   scope -> search -> screen -> summarize       (fresh run)
   existing workspace -> refresh                (re-run; append-only dedup keeps the corpus)
 
-OUTPUT:
-  .omr/literature/<slug>/        (or ~/.claude/literature/<slug>/ with --scope global)
+OUTPUT (always project-rooted):
+  .omr/literature/<slug>/        machine state (gitignored)
     scope.yaml                   research question, sources, criteria, output_languages
     paper_bank.json              append-only corpus; PK = DOI or arXiv ID; each
                                  entry carries a screening verdict + rubric_version
-    summary.md                   synthesis (included papers only) with
-                                 <!-- BEGIN omr:lit-review --> block
     log.jsonl                    per-run audit (queries, hit counts, dedups, verdicts)
+  docs/literature/<slug>/        human deliverable (committed)
+    summary.md                   synthesis (included papers only) with
+                                 <!-- BEGIN omr:lit-review --> block (+ summary.<lang>.md)
 
 SAFETY:
   - Never fabricates papers, authors, DOIs, or quotes.
@@ -184,7 +183,6 @@ user.
 Before Phase 1, read `./.omr/config.yaml` if it exists and load its
 `literature_review:` block as defaults:
 
-- `default_scope` → the `--scope` default (when no `--scope` flag given).
 - `output_languages` → seeds `scope.yaml.output_languages`.
 - `default_sources` → the source chain (when no `--sources` flag given).
 - `max_papers` → the `--max-papers` default.
