@@ -1,7 +1,7 @@
 ---
 id: setup
 name: setup
-version: 0.16.0
+version: 0.17.0
 description: |-
   Install, configure, and health-check Oh-My-Research (omr).
 stages: ["setup"]

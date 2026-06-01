@@ -35,6 +35,14 @@ hpc:
                                          # for the full path, e.g.
                                          # ./.omr/hpc/ + acme-slurm.yaml
 
+# --- Experiment monitoring cadence (consumed by /omr:experiment-monitor) ------
+monitor:
+  early_interval_minutes: 1              # check frequently during the failure-prone
+                                         # startup window (env/deps, dataset, config,
+                                         # model load) — most crashes happen here
+  training_interval_minutes: 15          # back off once training is stable (loss
+                                         # printing, steps advancing) — rarely errors
+
 # -----------------------------------------------------------------------------
 # Notes (comments only — not parsed).
 #

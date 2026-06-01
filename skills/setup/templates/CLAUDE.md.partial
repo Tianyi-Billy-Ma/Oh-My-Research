@@ -23,6 +23,9 @@ Invoke via `/omr:<name>`:
 - `grill-me` — relentlessly stress-test a research idea, hypothesis, or
   plan against your literature corpus and a reviewer rubric before you
   commit to it. Pairs with `literature-review` (corpus) and `ideate`/`plan`.
+- `experiment-monitor` — watch a running experiment on an adaptive cadence
+  (tight during startup, sparse during stable training; intervals from the
+  `monitor:` block of `.omr/config.yaml`). Hands off to scheduled wake-ups.
 
 Run `/omr:setup --help` for the current list. New skills land here as the
 plugin grows; the slash-command prefix is always `omr:`.
