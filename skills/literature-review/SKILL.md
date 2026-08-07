@@ -1,7 +1,7 @@
 ---
 id: literature-review
 name: literature-review
-version: 0.16.0
+version: 0.17.0
 argument-hint: [topic-or-url-or-arxiv-id]
 description: |-
   Search, screen, and summarize literature into a structured corpus; re-runs append safely.

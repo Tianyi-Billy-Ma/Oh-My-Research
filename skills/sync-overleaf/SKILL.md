@@ -1,7 +1,7 @@
 ---
 id: sync-overleaf
 name: sync-overleaf
-version: 0.16.0
+version: 0.17.0
 argument-hint: [push|pull|sync]
 description: |-
   Sync a local LaTeX/paper directory with an Overleaf project via pyoverleaf (cookie or browser-keychain auth), driven by ./.omr/config.yaml.

@@ -67,6 +67,7 @@ with its tools listed.
 | `/omr:literature-review` | `omr-literature-review` | Search → screen → summarize for a research question. KB-first (Zotero, local PDFs) then MCP fan-out (Exa, Tavily, Brave, HF, GitHub) then web. Reproducible screening rubric; re-runs append safely (Search dedups); `--from-existing` seeds from Zotero/BibTeX. |
 | `/omr:sync-overleaf` | `omr-sync-overleaf` | Two-way sync a local paper dir with Overleaf via pyoverleaf (cookie file or browser/keychain auth), driven by `.omr/config.yaml`. Resolves auth from a pointer (never the secret); dry-run + consent before any push. |
 | `/omr:grill-me` | `omr-grill-me` | Reviewer/committee-style grilling that stress-tests a research idea, hypothesis, or plan against your literature corpus + a rubric (novelty, feasibility, methodology, baselines, evaluation, threats). One question at a time; ends with a sharpened claim + ranked risks. |
+| `/omr:experiment-monitor` | `omr-experiment-monitor` | Watch a running experiment on an adaptive cadence — tight checks during failure-prone startup, sparse once training is stable (intervals from `config.yaml` `monitor:`). Doesn't prescribe how to observe; hands off to scheduled wake-ups; surfaces failures fast. |
 
 More skills land here as they're added; all follow the `/omr:<name>`
 convention.

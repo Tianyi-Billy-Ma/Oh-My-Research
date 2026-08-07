@@ -119,7 +119,24 @@ If `./.omr/hpc/` is empty (Phase 5 skipped or opted out), leave
 `default_cluster` blank and note the user can rerun `/omr:setup` after adding
 a cluster.
 
-### 6.6 Write the file
+### 6.6 Experiment monitoring cadence
+
+These two values drive `/omr:experiment-monitor`'s polling cadence — tight
+during a job's failure-prone startup, sparse once training is stable. The
+defaults (1 / 15 minutes) suit most runs; only ask if the user wants to
+adjust. `AskUserQuestion`:
+
+> Monitoring cadence for experiment jobs?
+>
+> 1. **Defaults** — check every 1 min during startup, every 15 min once
+>    training is stable. (Recommended.)
+> 2. **Customize** — set your own `early_interval_minutes` /
+>    `training_interval_minutes`.
+
+Store the chosen integers under `monitor.early_interval_minutes` and
+`monitor.training_interval_minutes`.
+
+### 6.7 Write the file
 
 Render the collected values into the template (replacing every
 `<placeholder>` and the `{{omr_version}}` token). Write `./.omr/config.yaml`
@@ -132,7 +149,7 @@ Echo to the user:
 > time or rerun `/omr:setup` to reconfigure. Auth fields hold pointers only —
 > no secret values are stored here.
 
-### 6.7 Record for Phase 7
+### 6.8 Record for Phase 7
 
 Pass forward: `config_phase: configured | skipped`, and the resolved
 `./.omr/config.yaml` path so Phase 7's wrap-up can mention it.

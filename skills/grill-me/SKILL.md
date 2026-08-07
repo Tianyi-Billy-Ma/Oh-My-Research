@@ -1,7 +1,7 @@
 ---
 id: grill-me
 name: grill-me
-version: 0.16.0
+version: 0.17.0
 argument-hint: [idea-or-plan-or-paper-path]
 description: |-
   Relentlessly stress-test a research idea, hypothesis, or plan against your literature corpus and a reviewer rubric before you commit to it.
